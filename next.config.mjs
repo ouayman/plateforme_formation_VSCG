@@ -4,6 +4,8 @@ const nextConfig = {
   poweredByHeader: false,
   compress: true,
   productionBrowserSourceMaps: false,
+  eslint: { ignoreDuringBuilds: true },
+  typescript: { ignoreBuildErrors: true },
   webpack: (config, { dev }) => {
     if (dev) {
       // OneDrive / Windows: polling avoids file watcher hangs

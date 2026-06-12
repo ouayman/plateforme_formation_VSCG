@@ -1,5 +1,22 @@
 # Commandes Docker — VSCG Platform
 
+cd /var/www/vhosts/formation.valuestream-consulting.com/httpdocs
+chmod +x deploy.sh
+
+git remote add origin https://github.com/ouayman/plateforme_formation_VSCG.git
+
+
+git remote -v
+
+git add .
+
+git commit -m "update"
+
+git push
+
+
+
+
 ## Démarrage
 
 ```bash
