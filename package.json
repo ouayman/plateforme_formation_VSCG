@@ -19,6 +19,7 @@
     "docker:dev": "docker compose --profile dev up -d --build",
     "docker:down": "docker compose down",
     "docker:logs": "docker compose logs -f app",
+    "postinstall": "prisma generate",
     "vercel-build": "npx prisma generate && npx prisma db push && next build"
   },
   "prisma": {
@@ -45,9 +46,7 @@
     "zod": "^4.4.3",
     "@prisma/client": "^5.22.0",
     "prisma": "^5.22.0",
-    "tsx": "^4.22.4",
-    "prisma": "...",
-    "@prisma/client": "..."
+    "tsx": "^4.22.4"
   },
   "devDependencies": {
     "@types/node": "^20",
