@@ -4,6 +4,8 @@ import { isDemoMode } from "@/lib/demo-mode";
 import { prisma } from "@/lib/prisma";
 import { getPlatformSettings } from "@/lib/platform-settings";
 
+export const dynamic = "force-dynamic";
+
 export async function GET() {
   if (!isDemoMode()) {
     return NextResponse.json({ error: "not_available" }, { status: 404 });
@@ -47,6 +49,7 @@ export async function GET() {
         projectName: r.project.name,
       })),
       isParticipant: user.programs.length > 0,
-    }))
+    })),
+    { headers: { "Cache-Control": "no-store" } }
   );
 }

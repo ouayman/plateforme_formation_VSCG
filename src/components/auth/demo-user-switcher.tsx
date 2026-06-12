@@ -72,15 +72,22 @@ export function DemoUserSwitcher({ variant = "topbar" }: DemoUserSwitcherProps) 
 
   async function loadUsers() {
     setError("");
-    const res = await fetch("/api/auth/demo-users");
-    if (!res.ok) {
-      setError("Mode démo indisponible.");
-      return;
+    try {
+      const res = await fetch("/api/auth/demo-users", { cache: "no-store" });
+      if (!res.ok) {
+        setError("Mode démo indisponible.");
+        return;
+      }
+      const data = (await res.json()) as DemoUser[];
+      setUsers(data);
+      const firstRoleUsers = usersForRole(data, role);
+      setUserId(firstRoleUsers[0]?.id ?? "");
+      if (data.length === 0) {
+        setError("Aucun utilisateur en base de données.");
+      }
+    } catch {
+      setError("Impossible de charger les utilisateurs démo.");
     }
-    const data = (await res.json()) as DemoUser[];
-    setUsers(data);
-    const firstRoleUsers = usersForRole(data, role);
-    setUserId(firstRoleUsers[0]?.id ?? "");
   }
 
   function handleOpen(next: boolean) {

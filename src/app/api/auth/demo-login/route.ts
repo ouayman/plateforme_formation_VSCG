@@ -4,6 +4,8 @@ import { isDemoMode } from "@/lib/demo-mode";
 import { createSession } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
 
+export const dynamic = "force-dynamic";
+
 const schema = z.object({
   userId: z.string().min(1),
 });
