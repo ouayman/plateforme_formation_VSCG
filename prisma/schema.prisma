@@ -1,0 +1,496 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum CompanyType {
+  internal
+  client
+}
+
+enum UserType {
+  internal
+  client
+}
+
+enum GlobalRole {
+  ADMIN
+  PLANNER
+  TRAINER
+}
+
+enum ProjectRole {
+  COORDINATOR
+  TRAINER
+}
+
+enum SessionStatus {
+  confirmed
+  pending
+  cancelled
+}
+
+enum AttendanceStatus {
+  present
+  absent
+}
+
+enum CertificateStatus {
+  locked
+  unlocked
+}
+
+enum TrainingPostType {
+  manual
+  system
+}
+
+enum TrainingPostSystemType {
+  welcome
+  absence
+  training_completed
+  certificate_available
+}
+
+enum TrainingPostReactionType {
+  like
+  celebrate
+  insightful
+}
+
+model Company {
+  id                           String      @id @default(cuid())
+  name                         String
+  type                         CompanyType
+  logoUrl                      String?     @map("logo_url")
+  attendanceThresholdPercent   Int         @default(70) @map("attendance_threshold_percent")
+  attendanceThresholdUpdatedAt DateTime    @default(now()) @map("attendance_threshold_updated_at")
+  createdAt                    DateTime    @default(now()) @map("created_at")
+  updatedAt                    DateTime    @updatedAt @map("updated_at")
+
+  users    User[]
+  projects Project[]
+  members  UserCompany[]
+
+  @@map("companies")
+}
+
+model User {
+  id           String    @id @default(cuid())
+  email        String    @unique
+  firstName    String    @map("first_name")
+  lastName     String    @map("last_name")
+  phone        String?
+  avatarUrl    String?   @map("avatar_url")
+  companyId    String    @map("company_id")
+  type         UserType
+  lastSignInAt DateTime? @map("last_sign_in_at")
+  loginCount   Int       @default(0) @map("login_count")
+  createdAt    DateTime  @default(now()) @map("created_at")
+
+  company              Company              @relation(fields: [companyId], references: [id])
+  companies            UserCompany[]
+  globalRoles          UserGlobalRole[]
+  projectRoles         UserProjectRole[]
+  programs             UserProgram[]
+  trainings            UserTraining[]
+  skillDomains         UserSkillDomain[]
+  sessionParticipants  SessionParticipant[]
+  sessionsAsTrainer    Session[]            @relation("SessionTrainer")
+  sessionTrainerLinks  SessionTrainer[]
+  documents            Document[]
+  reports              Report[]
+  feedbacks            Feedback[]
+  certificates         Certificate[]
+  certificatesUnlocked Certificate[]        @relation("CertificateUnlockedBy")
+  trainingPosts        TrainingPost[]       @relation("PostAuthor")
+  targetedPosts        TrainingPost[]       @relation("PostTarget")
+  postReactions        TrainingPostReaction[]
+  unavailabilities          TrainerUnavailability[] @relation("TrainerUnavailability")
+  unavailabilitiesCreated   TrainerUnavailability[] @relation("UnavailabilityCreatedBy")
+  otpCodes             OtpCode[]
+
+  @@map("users")
+}
+
+model UserCompany {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  companyId String   @map("company_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, companyId])
+  @@map("user_companies")
+}
+
+model SkillDomain {
+  id         String   @id @default(cuid())
+  name       String   @unique
+  orderIndex Int      @default(0) @map("order_index")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  trainers  UserSkillDomain[]
+  trainings TrainingSkillDomain[]
+
+  @@map("skill_domains")
+}
+
+model UserSkillDomain {
+  id            String @id @default(cuid())
+  userId        String @map("user_id")
+  skillDomainId String @map("skill_domain_id")
+
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  skillDomain SkillDomain @relation(fields: [skillDomainId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, skillDomainId])
+  @@map("user_skill_domains")
+}
+
+model TrainingSkillDomain {
+  id            String @id @default(cuid())
+  trainingId    String @map("training_id")
+  skillDomainId String @map("skill_domain_id")
+
+  training    Training    @relation(fields: [trainingId], references: [id], onDelete: Cascade)
+  skillDomain SkillDomain @relation(fields: [skillDomainId], references: [id], onDelete: Cascade)
+
+  @@unique([trainingId, skillDomainId])
+  @@map("training_skill_domains")
+}
+
+model OtpCode {
+  id        String    @id @default(cuid())
+  userId    String    @map("user_id")
+  code      String
+  attempts  Int       @default(0)
+  expiresAt DateTime  @map("expires_at")
+  usedAt    DateTime? @map("used_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, expiresAt])
+  @@map("otp_codes")
+}
+
+model UserGlobalRole {
+  id     String     @id @default(cuid())
+  userId String     @map("user_id")
+  role   GlobalRole
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, role])
+  @@map("user_global_roles")
+}
+
+model UserProjectRole {
+  id                    String      @id @default(cuid())
+  userId                String      @map("user_id")
+  projectId             String      @map("project_id")
+  role                  ProjectRole
+  canAddParticipants    Boolean     @default(false) @map("can_add_participants")
+  canPublishFeed        Boolean     @default(false) @map("can_publish_feed")
+  canUnlockCertificates Boolean     @default(false) @map("can_unlock_certificates")
+  canManageSessions     Boolean     @default(false) @map("can_manage_sessions")
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, projectId, role])
+  @@map("user_project_roles")
+}
+
+model PlatformSettings {
+  id               String   @id @default("default")
+  organizationName String   @default("Value Stream Consulting") @map("organization_name")
+  logoDarkUrl      String   @default("/branding/vscg-logo-dark.png") @map("logo_url")
+  logoLightUrl     String   @default("/branding/vscg-icon.png") @map("icon_url")
+  welcomeSignatory String   @default("L'équipe VSCG") @map("welcome_signatory")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  @@map("platform_settings")
+}
+
+model Project {
+  id        String    @id @default(cuid())
+  name      String
+  companyId String    @map("company_id")
+  startDate DateTime  @map("start_date") @db.Date
+  endDate   DateTime  @map("end_date") @db.Date
+  deletedAt DateTime? @map("deleted_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+
+  company      Company            @relation(fields: [companyId], references: [id])
+  locations    ProjectLocation[]
+  signatories  ProjectSignatory[]
+  programs     Program[]
+  projectRoles UserProjectRole[]
+
+  @@map("projects")
+}
+
+model ProjectLocation {
+  id           String  @id @default(cuid())
+  projectId    String  @map("project_id")
+  name         String
+  address      String?
+  instructions String?
+
+  project  Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  sessions Session[]
+
+  @@map("project_locations")
+}
+
+model ProjectSignatory {
+  id                String @id @default(cuid())
+  projectId         String @map("project_id")
+  name              String
+  title             String
+  signatureImageUrl String @map("signature_image_url")
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@map("project_signatories")
+}
+
+model Program {
+  id         String @id @default(cuid())
+  projectId  String @map("project_id")
+  name       String
+  orderIndex Int    @map("order_index")
+
+  project      Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  trainings    Training[]
+  participants UserProgram[]
+
+  @@unique([projectId, name])
+  @@map("programs")
+}
+
+model Training {
+  id          String  @id @default(cuid())
+  programId   String  @map("program_id")
+  title       String
+  description String?
+  orderIndex  Int     @map("order_index")
+
+  program       Program               @relation(fields: [programId], references: [id], onDelete: Cascade)
+  sessions      Session[]
+  documents     Document[]
+  certificates  Certificate[]
+  posts         TrainingPost[]
+  participants  UserTraining[]
+  feedbacks     Feedback[]
+  skillDomains  TrainingSkillDomain[]
+
+  @@unique([programId, title])
+  @@map("trainings")
+}
+
+model UserTraining {
+  id         String    @id @default(cuid())
+  userId     String    @map("user_id")
+  trainingId String    @map("training_id")
+  deletedAt  DateTime? @map("deleted_at")
+  createdAt  DateTime  @default(now()) @map("created_at")
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  training Training @relation(fields: [trainingId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, trainingId])
+  @@index([trainingId, deletedAt])
+  @@map("user_trainings")
+}
+
+model TrainingPost {
+  id              String                  @id @default(cuid())
+  trainingId      String                  @map("training_id")
+  authorId        String?                 @map("author_id")
+  type            TrainingPostType        @default(manual)
+  systemType      TrainingPostSystemType? @map("system_type")
+  targetUserId    String?                 @map("target_user_id")
+  text            String?                 @db.Text
+  linkUrl         String?                 @map("link_url")
+  linkTitle       String?                 @map("link_title")
+  linkDescription String?                 @map("link_description") @db.Text
+  linkImageUrl    String?                 @map("link_image_url")
+  createdAt       DateTime                @default(now()) @map("created_at")
+  updatedAt       DateTime                @updatedAt @map("updated_at")
+
+  training    Training                 @relation(fields: [trainingId], references: [id], onDelete: Cascade)
+  author      User?                    @relation("PostAuthor", fields: [authorId], references: [id])
+  targetUser  User?                    @relation("PostTarget", fields: [targetUserId], references: [id])
+  attachments TrainingPostAttachment[]
+  reactions   TrainingPostReaction[]
+
+  @@index([trainingId, createdAt(sort: Desc)])
+  @@map("training_posts")
+}
+
+model TrainingPostReaction {
+  id        String                   @id @default(cuid())
+  postId    String                   @map("post_id")
+  userId    String                   @map("user_id")
+  type      TrainingPostReactionType
+  createdAt DateTime                 @default(now()) @map("created_at")
+
+  post TrainingPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, userId])
+  @@map("training_post_reactions")
+}
+
+model TrainingPostAttachment {
+  id        String   @id @default(cuid())
+  postId    String   @map("post_id")
+  fileUrl   String   @map("file_url")
+  fileName  String?  @map("file_name")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  post TrainingPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@map("training_post_attachments")
+}
+
+model Session {
+  id            String        @id @default(cuid())
+  trainingId    String        @map("training_id")
+  trainerId     String?       @map("trainer_id")
+  locationId    String?       @map("location_id")
+  startDatetime DateTime      @map("start_datetime")
+  endDatetime   DateTime      @map("end_datetime")
+  status        SessionStatus @default(pending)
+
+  training     Training             @relation(fields: [trainingId], references: [id], onDelete: Cascade)
+  trainer      User?                @relation("SessionTrainer", fields: [trainerId], references: [id])
+  location     ProjectLocation?     @relation(fields: [locationId], references: [id])
+  participants SessionParticipant[]
+  reports      Report[]
+  trainers     SessionTrainer[]
+
+  @@unique([trainingId, startDatetime])
+  @@map("sessions")
+}
+
+model SessionTrainer {
+  id        String @id @default(cuid())
+  sessionId String @map("session_id")
+  userId    String @map("user_id")
+
+  session Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([sessionId, userId])
+  @@map("session_trainers")
+}
+
+model TrainerUnavailability {
+  id            String   @id @default(cuid())
+  userId        String   @map("user_id")
+  startDatetime DateTime @map("start_datetime")
+  endDatetime   DateTime @map("end_datetime")
+  createdById   String   @map("created_by_id")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  user      User @relation("TrainerUnavailability", fields: [userId], references: [id], onDelete: Cascade)
+  createdBy User @relation("UnavailabilityCreatedBy", fields: [createdById], references: [id])
+
+  @@index([userId, startDatetime])
+  @@map("trainer_unavailabilities")
+}
+
+model UserProgram {
+  id        String @id @default(cuid())
+  userId    String @map("user_id")
+  programId String @map("program_id")
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  program Program @relation(fields: [programId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, programId])
+  @@map("user_programs")
+}
+
+model SessionParticipant {
+  id               String            @id @default(cuid())
+  sessionId        String            @map("session_id")
+  userId           String            @map("user_id")
+  attendanceStatus AttendanceStatus? @map("attendance_status")
+
+  session Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([sessionId, userId])
+  @@map("session_participants")
+}
+
+model Document {
+  id         String   @id @default(cuid())
+  trainingId String   @map("training_id")
+  fileUrl    String   @map("file_url")
+  uploadedBy String   @map("uploaded_by")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  training Training @relation(fields: [trainingId], references: [id], onDelete: Cascade)
+  uploader User     @relation(fields: [uploadedBy], references: [id])
+
+  @@map("documents")
+}
+
+model Report {
+  id        String   @id @default(cuid())
+  sessionId String   @map("session_id")
+  trainerId String   @map("trainer_id")
+  content   String   @db.Text
+  createdAt DateTime @default(now()) @map("created_at")
+
+  session Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  trainer User    @relation(fields: [trainerId], references: [id])
+
+  @@map("reports")
+}
+
+model Feedback {
+  id         String   @id @default(cuid())
+  trainingId String   @map("training_id")
+  userId     String   @map("user_id")
+  rating     Int
+  comment    String?
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  training Training @relation(fields: [trainingId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([trainingId, userId])
+  @@map("feedbacks")
+}
+
+model Certificate {
+  id          String            @id @default(cuid())
+  userId      String            @map("user_id")
+  trainingId  String            @map("training_id")
+  status      CertificateStatus @default(locked)
+  unlockedBy  String?           @map("unlocked_by")
+  unlockedAt  DateTime?         @map("unlocked_at")
+  generatedAt DateTime?         @map("generated_at")
+
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  training       Training @relation(fields: [trainingId], references: [id], onDelete: Cascade)
+  unlockedByUser User?    @relation("CertificateUnlockedBy", fields: [unlockedBy], references: [id])
+
+  @@unique([userId, trainingId])
+  @@map("certificates")
+}
