@@ -19,7 +19,7 @@
     "docker:dev": "docker compose --profile dev up -d --build",
     "docker:down": "docker compose down",
     "docker:logs": "docker compose logs -f app",
-    "vercel-build": "prisma generate && prisma migrate deploy && next build"
+    "vercel-build": "npx prisma generate && npx prisma db push && next build"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
