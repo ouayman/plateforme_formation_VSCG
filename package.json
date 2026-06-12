@@ -18,7 +18,8 @@
     "docker:up": "docker compose up -d --build",
     "docker:dev": "docker compose --profile dev up -d --build",
     "docker:down": "docker compose down",
-    "docker:logs": "docker compose logs -f app"
+    "docker:logs": "docker compose logs -f app",
+    "vercel-build": "prisma generate && prisma migrate deploy && next build"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
@@ -44,7 +45,9 @@
     "zod": "^4.4.3",
     "@prisma/client": "^5.22.0",
     "prisma": "^5.22.0",
-    "tsx": "^4.22.4"
+    "tsx": "^4.22.4",
+    "prisma": "...",
+    "@prisma/client": "..."
   },
   "devDependencies": {
     "@types/node": "^20",
