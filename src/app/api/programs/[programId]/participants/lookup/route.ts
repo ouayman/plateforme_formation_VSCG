@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth/get-current-user";
-import { requireProjectAccessApi } from "@/lib/auth/require";
 import { prisma } from "@/lib/prisma";
 import { canManageProgramParticipants } from "@/lib/permissions";
 import { lookupParticipantByEmail } from "@/lib/participant-lookup";

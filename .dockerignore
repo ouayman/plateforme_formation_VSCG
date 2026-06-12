@@ -1,0 +1,14 @@
+node_modules
+.next
+.git
+uploads
+.env
+.env.local
+.env*.local
+deploy
+coverage
+*.md
+!README.md
+!docs/**/*.md
+npm-debug.log*
+.DS_Store

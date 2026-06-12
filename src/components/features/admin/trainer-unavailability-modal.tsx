@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { CalendarOff, Loader2, Plus, Trash2 } from "lucide-react";
+import { CalendarOff, Loader2, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -13,7 +13,6 @@ import {
 } from "@/components/ui/dialog";
 import { DeleteButton } from "@/components/features/projects/delete-button";
 import { formatDatetime, toDatetimeLocalValue } from "@/lib/format";
-import { cn } from "@/lib/utils";
 
 export type UnavailabilityRow = {
   id: string;

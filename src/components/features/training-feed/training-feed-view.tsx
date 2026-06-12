@@ -78,7 +78,6 @@ function matchesSearch(post: FeedPost, query: string) {
 
 export function TrainingFeedView({
   trainingId,
-  programId,
   title,
   programName,
   posts,

@@ -1,5 +1,4 @@
 import { renderOtpEmail } from "@/emails/otp-code";
-import { APP_NAME } from "@/lib/constants";
 import { sendMail } from "@/lib/mail/mail-service";
 
 export async function sendOtpEmail(to: string, code: string) {

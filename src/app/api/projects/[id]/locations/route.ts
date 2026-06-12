@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { requireProjectAccessApi, requireStaffApi } from "@/lib/auth/require";
+import { requireProjectAccessApi } from "@/lib/auth/require";
 import { prisma } from "@/lib/prisma";
 import { locationSchema } from "@/lib/validations/project";
 

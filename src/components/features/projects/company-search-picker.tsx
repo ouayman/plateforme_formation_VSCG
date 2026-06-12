@@ -52,6 +52,7 @@ export function CompanySearchPicker({
         id={id}
         type="button"
         disabled={disabled}
+        data-required={required ? "" : undefined}
         onClick={() => {
           if (disabled) return;
           setOpen((v) => !v);
