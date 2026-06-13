@@ -4,6 +4,12 @@ set -euo pipefail
 REPO_URL="https://github.com/ouayman/plateforme_formation_VSCG.git"
 DEFAULT_BRANCH="main"
 
+# OneDrive / Windows : évite le gc auto qui bloque sur ".git/objects/XX"
+export GIT_OPTIONAL_LOCKS=0
+export GIT_ASK_YESNO=false
+git config --local gc.auto 0 2>/dev/null || true
+git config --local maintenance.auto false 2>/dev/null || true
+
 if [ -z "${1:-}" ]; then
   echo "❌ Erreur : tu dois fournir un message de commit."
   echo '👉 Exemple : sh gitupdate.sh "fix: correction bug login"'
@@ -72,7 +78,7 @@ fi
 # 8) Mettre à jour depuis le remote
 if git ls-remote --heads origin "$DEFAULT_BRANCH" | grep -q "$DEFAULT_BRANCH"; then
   echo "⬇️ Fetch des dernières modifications..."
-  git fetch origin "$DEFAULT_BRANCH"
+  git -c gc.auto=0 -c maintenance.auto=false fetch origin "$DEFAULT_BRANCH"
 
   echo "🔄 Rebase sur origin/$DEFAULT_BRANCH..."
   git rebase "origin/$DEFAULT_BRANCH"
@@ -82,6 +88,6 @@ fi
 
 # 9) Push
 echo "🚀 Push vers GitHub..."
-git push -u origin "$DEFAULT_BRANCH"
+git -c gc.auto=0 -c maintenance.auto=false push -u origin "$DEFAULT_BRANCH"
 
 echo "✅ Terminé ✅"
