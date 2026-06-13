@@ -3,10 +3,12 @@
 import { useMemo, useState } from "react";
 import { Search, UserCog } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { ProjectRoleModal } from "@/components/features/projects/project-role-modal";
-import { CoordinatorRoleModal } from "@/components/features/projects/coordinator-role-modal";
+import {
+  LazyCoordinatorRoleModal as CoordinatorRoleModal,
+  LazyDeleteButton as DeleteButton,
+  LazyProjectRoleModal as ProjectRoleModal,
+} from "@/components/features/projects/lazy-modals";
 import { CoordinatorPermissionsInline } from "@/components/features/projects/coordinator-permissions";
-import { DeleteButton } from "@/components/features/projects/delete-button";
 import { SectionBlock } from "@/components/layout/section-block";
 import { EmptyState } from "@/components/ui/empty-state";
 import { countLabel } from "@/lib/format";

@@ -1,7 +1,7 @@
 import { notFound, redirect } from "next/navigation";
 import { Calendar, ClipboardList, MapPin, User } from "lucide-react";
 import { requireAuth } from "@/lib/auth/require";
-import { prisma } from "@/lib/prisma";
+import { loadSessionDetail } from "@/lib/loaders/session-detail";
 import { canAccessProjectWithSnapshot, canManageAttendance } from "@/lib/permissions";
 import {
   DISPLAY_STATUS_META,
@@ -34,65 +34,25 @@ export default async function SessionDetailPage({
   params: { id: string };
 }) {
   const user = await requireAuth();
-
-  const session = await prisma.session.findUnique({
-    where: { id: params.id },
-    select: {
-      id: true,
-      startDatetime: true,
-      endDatetime: true,
-      status: true,
-      trainer: { select: { id: true, firstName: true, lastName: true } },
-      location: { select: { name: true, address: true } },
-      reports: {
-        select: {
-          content: true,
-          createdAt: true,
-          trainer: { select: { firstName: true, lastName: true } },
-        },
-        orderBy: { createdAt: "desc" },
-        take: 1,
-      },
-      participants: {
-        select: {
-          attendanceStatus: true,
-          user: { select: { id: true, firstName: true, lastName: true, email: true } },
-        },
-        orderBy: { user: { lastName: "asc" } },
-      },
-      training: {
-        select: {
-          id: true,
-          title: true,
-          sessions: {
-            select: { id: true, status: true, startDatetime: true, endDatetime: true },
-          },
-          program: {
-            select: {
-              id: true,
-              name: true,
-              projectId: true,
-              project: { select: { name: true, deletedAt: true, companyId: true } },
-            },
-          },
-        },
-      },
-    },
-  });
+  const session = await loadSessionDetail(params.id);
 
   if (!session) notFound();
 
   const projectId = session.training.program.projectId;
   const projectSnapshot = session.training.program.project;
-  const allowed = await canAccessProjectWithSnapshot(
-    user.id,
-    projectId,
-    { deletedAt: projectSnapshot.deletedAt, companyId: projectSnapshot.companyId },
-    user.permissions
-  );
+
+  const [allowed, canEdit] = await Promise.all([
+    canAccessProjectWithSnapshot(
+      user.id,
+      projectId,
+      { deletedAt: projectSnapshot.deletedAt, companyId: projectSnapshot.companyId },
+      user.permissions
+    ),
+    canManageAttendance(user.id, session.id),
+  ]);
+
   if (!allowed) redirect("/projects");
 
-  const canEdit = await canManageAttendance(user.id, session.id);
   const report = session.reports[0] ?? null;
   const participantRows = session.participants.map((p) => ({
     attendanceStatus: p.attendanceStatus,

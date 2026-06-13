@@ -1,5 +1,4 @@
 import { execSync, spawn } from "node:child_process";
-import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { needsFileWatcherPolling } from "./file-watcher-polling.mjs";
@@ -8,6 +7,11 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(__dirname, "..");
 const port = process.env.PORT ?? "3000";
 const nextBin = path.join(root, "node_modules", "next", "dist", "bin", "next");
+const cliArgs = process.argv.slice(2);
+const useTurbo =
+  cliArgs.includes("--turbo") ||
+  process.env.DEV_TURBO === "1" ||
+  process.env.DEV_TURBO === "true";
 
 function log(message) {
   console.log(`[dev] ${message}`);
@@ -56,33 +60,25 @@ function killPort(targetPort) {
   }
 }
 
-function cleanNextCache() {
-  const nextDir = path.join(root, ".next");
-
-  for (let attempt = 1; attempt <= 3; attempt += 1) {
-    try {
-      fs.rmSync(nextDir, { recursive: true, force: true });
-      log("Cache .next supprimé");
-      return;
-    } catch {
-      if (attempt < 3) {
-        log(`Cache .next verrouillé, nouvelle tentative (${attempt}/3)...`);
-        sleep(1000);
-      }
-    }
-  }
-
-  log("Attention: impossible de supprimer entièrement .next (fichier verrouillé)");
-}
-
 log("Arrêt des anciens serveurs sur les ports 3000 et 3001...");
 killPort(3000);
 killPort(3001);
 sleep(800);
 
-cleanNextCache();
+if (process.env.DEV_CLEAN === "true" || process.env.DEV_CLEAN === "1") {
+  log("DEV_CLEAN=1 → nettoyage .next…");
+  execSync(`node "${path.join(__dirname, "clean-next.mjs")}"`, {
+    stdio: "inherit",
+    cwd: root,
+  });
+} else if (/OneDrive/i.test(root)) {
+  log("OneDrive : .next conservé au démarrage (npm run clean:next si corruption)");
+}
 
 log(`Démarrage sur http://localhost:${port}`);
+if (useTurbo) {
+  log("Turbopack activé (--turbo ou DEV_TURBO=1)");
+}
 
 const usePolling = needsFileWatcherPolling(root);
 if (usePolling) {
@@ -91,14 +87,17 @@ if (usePolling) {
   log("File watcher : natif (sans polling)");
 }
 
-const devEnv = { ...process.env };
+const devEnv = {
+  ...process.env,
+  NEXT_TELEMETRY_DISABLED: "1",
+};
 if (usePolling) {
   devEnv.WATCHPACK_POLLING = "true";
   devEnv.WATCHPACK_POLLING_INTERVAL = process.env.WEBPACK_POLL_INTERVAL ?? "1000";
   devEnv.CHOKIDAR_USEPOLLING = "true";
 }
 
-const child = spawn(process.execPath, [nextBin, "dev", "--port", port], {
+const child = spawn(process.execPath, [nextBin, "dev", "--port", port, ...(useTurbo ? ["--turbo"] : [])], {
   cwd: root,
   stdio: "inherit",
   env: devEnv,

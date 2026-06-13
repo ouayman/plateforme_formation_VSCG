@@ -79,7 +79,7 @@ export async function POST(req: Request) {
     },
     include: {
       company: { select: { id: true, name: true, type: true } },
-      globalRoles: true,
+      globalRoles: { select: { role: true } },
     },
   });
 

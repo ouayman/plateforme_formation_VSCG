@@ -8,6 +8,19 @@ import { sendWelcomeEmail } from "@/lib/mail/send-welcome";
 import { setUserSkillDomains } from "@/lib/skill-domain";
 import { createTrainerSchema } from "@/lib/validations/trainer";
 
+const trainerSelect = {
+  id: true,
+  email: true,
+  firstName: true,
+  lastName: true,
+  phone: true,
+  skillDomains: {
+    select: {
+      skillDomain: { select: { id: true, name: true } },
+    },
+  },
+} as const;
+
 export async function GET() {
   const auth = await requireAdminApi();
   if (auth.error) return auth.error;
@@ -15,11 +28,7 @@ export async function GET() {
   const trainers = await prisma.user.findMany({
     where: { globalRoles: { some: { role: GlobalRole.TRAINER } } },
     orderBy: { lastName: "asc" },
-    include: {
-      skillDomains: {
-        include: { skillDomain: { select: { id: true, name: true } } },
-      },
-    },
+    select: trainerSelect,
   });
 
   return NextResponse.json(
@@ -87,11 +96,7 @@ export async function POST(req: Request) {
 
   const trainer = await prisma.user.findUnique({
     where: { id: user.id },
-    include: {
-      skillDomains: {
-        include: { skillDomain: { select: { id: true, name: true } } },
-      },
-    },
+    select: trainerSelect,
   });
 
   return NextResponse.json(

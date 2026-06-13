@@ -16,7 +16,7 @@ import {
 } from "@/lib/permissions";
 import { SetBreadcrumb } from "@/components/layout/breadcrumb-context";
 import { participantRoutes } from "@/lib/routes";
-import { ProgramEditButton } from "@/components/features/programs/program-form-modal";
+import { LazyProgramEditButton as ProgramEditButton } from "@/components/features/programs/lazy-modals";
 import { mapTrainingCardRow } from "@/lib/training-ui";
 import { ProgramDetailTabs } from "@/components/features/programs/program-detail-tabs";
 import { ProgramParticipantsPanel } from "@/components/features/programs/program-participants-panel";

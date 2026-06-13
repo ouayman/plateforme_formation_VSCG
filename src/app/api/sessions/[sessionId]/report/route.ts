@@ -6,6 +6,15 @@ import { canManageAttendance } from "@/lib/permissions";
 import { syncSessionStatusInDb } from "@/lib/session-status";
 import { reportSchema } from "@/lib/validations/session";
 
+const reportSelect = {
+  id: true,
+  sessionId: true,
+  trainerId: true,
+  content: true,
+  createdAt: true,
+  trainer: { select: { firstName: true, lastName: true } },
+} as const;
+
 async function getSessionContext(sessionId: string) {
   return prisma.session.findUnique({
     where: { id: sessionId },
@@ -28,9 +37,7 @@ export async function GET(
 
   const report = await prisma.report.findFirst({
     where: { sessionId: params.sessionId },
-    include: {
-      trainer: { select: { firstName: true, lastName: true } },
-    },
+    select: reportSelect,
     orderBy: { createdAt: "desc" },
   });
 
@@ -69,9 +76,7 @@ export async function PUT(
     ? await prisma.report.update({
         where: { id: existing.id },
         data: { content: parsed.data.content, trainerId },
-        include: {
-          trainer: { select: { firstName: true, lastName: true } },
-        },
+        select: reportSelect,
       })
     : await prisma.report.create({
         data: {
@@ -79,9 +84,7 @@ export async function PUT(
           trainerId,
           content: parsed.data.content,
         },
-        include: {
-          trainer: { select: { firstName: true, lastName: true } },
-        },
+        select: reportSelect,
       });
 
   await syncSessionStatusInDb(params.sessionId);

@@ -1,5 +1,6 @@
 import { cache } from "react";
 import { AttendanceStatus, GlobalRole, ProjectRole, UserType } from "@prisma/client";
+import type { CoordinatorProjectRole } from "@/lib/coordinator-project-role";
 import { prisma } from "@/lib/prisma";
 import { isUserAssignedToTraining } from "@/lib/user-training";
 
@@ -390,4 +391,57 @@ export function resolveParticipantOnlyFast(perms: UserPermissions): boolean | nu
     return false;
   }
   return null;
+}
+
+export function deriveTrainingPagePermissions(
+  perms: UserPermissions,
+  projectId: string,
+  coordinatorRole: CoordinatorProjectRole | null
+) {
+  if (perms.isAdmin || perms.isPlanner) {
+    return {
+      canPublish: true,
+      canManageSessions: true,
+      canManageCertificates: true,
+      canManageParticipants: true,
+    };
+  }
+
+  const projectTrainer = perms.projectRoles.some(
+    (r) => r.projectId === projectId && r.role === ProjectRole.TRAINER
+  );
+
+  return {
+    canPublish: perms.isTrainer || projectTrainer || !!coordinatorRole?.canPublishFeed,
+    canManageSessions: !!coordinatorRole?.canManageSessions,
+    canManageCertificates: !!coordinatorRole?.canUnlockCertificates,
+    canManageParticipants: !!coordinatorRole?.canAddParticipants,
+  };
+}
+
+export async function resolveTrainingPageAccess(
+  userId: string,
+  input: {
+    permissions: UserPermissions;
+    participantOnly: boolean;
+    assigned: boolean;
+    projectId: string;
+    project: { deletedAt: Date | null; companyId: string };
+  }
+): Promise<boolean> {
+  const { permissions, participantOnly, assigned, projectId, project } = input;
+
+  if (participantOnly) return assigned;
+  if (permissions.isInternal || isStaff(permissions)) return true;
+
+  return canAccessProjectWithSnapshot(userId, projectId, project, permissions);
+}
+
+export function hasCoordinatorRoleOnProject(
+  perms: UserPermissions,
+  projectId: string
+) {
+  return perms.projectRoles.some(
+    (r) => r.projectId === projectId && r.role === ProjectRole.COORDINATOR
+  );
 }

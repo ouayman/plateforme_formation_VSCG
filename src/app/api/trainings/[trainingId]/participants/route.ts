@@ -38,7 +38,7 @@ export async function GET(
   const [assigned, programPool] = await Promise.all([
     prisma.userTraining.findMany({
       where: { trainingId: params.trainingId, deletedAt: null },
-      include: {
+      select: {
         user: {
           select: { id: true, firstName: true, lastName: true, email: true },
         },
@@ -47,7 +47,7 @@ export async function GET(
     }),
     prisma.userProgram.findMany({
       where: { programId: ctx.programId },
-      include: {
+      select: {
         user: {
           select: { id: true, firstName: true, lastName: true, email: true },
         },

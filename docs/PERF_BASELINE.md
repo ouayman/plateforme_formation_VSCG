@@ -130,3 +130,56 @@ Phase 4 (optionnel) : fenêtre temporelle planning staff si volume extrême, cac
 - `getCachedClientCompanies()` — TTL 60 s (`/projects`, formulaire projet)
 - `src/lib/loaders/dashboard.ts` — stats tableau de bord en `Promise.all`
 - `/sessions/[id]` : `include` → `select` + accès via snapshot projet chargé
+
+## Loaders uniformisés (dashboard)
+
+Toutes les pages `(dashboard)/**/page.tsx` délèguent les requêtes à `src/lib/loaders/` :
+
+| Loader | Route |
+|--------|-------|
+| `admin-users.ts` | `/admin/users` |
+| `admin-participants.ts` | `/admin/participants` |
+| `admin-companies.ts` | `/admin/companies` |
+| `admin-skill-domains.ts` | `/admin/skill-domains` |
+| `admin-settings.ts` | `/admin/settings` |
+| `admin-trainers.ts` | `/admin/trainers` |
+| `account.ts` | `/account` |
+| `session-detail.ts` | `/sessions/[id]` |
+| `my-trainings.ts` | `/my-trainings` |
+| (+ loaders phases 1–3 : projects, training, planning, programme, dashboard) |
+
+## Phase P1 appliquée
+
+- `getCurrentUser()` — sans jointure `companies` pour staff/internal
+- `loadTrainingPageData()` — accès + permissions + secondary en 3 vagues max (vs 4+)
+- `deriveTrainingPagePermissions()` / `resolveTrainingPageAccess()` — 1 seul fetch coordinateur
+- Layout : instrumentation Prisma `[prisma:request] dashboard-layout`
+
+## Phase P2 client (lazy modals admin)
+
+Réduction du JS initial / hydratation sur pages admin et formulaires projet :
+
+- `src/components/features/admin/lazy-modals.tsx` — `dynamic()` + `ssr: false` pour modals Radix
+- `src/components/features/projects/lazy-modals.tsx` — `ProjectFormModal`, `ProgramEditButton`
+- Pages : `/admin/trainers`, `/companies`, `/users`, `/participants`, `/skill-domains`, `/settings`
+- Tables client : `users-admin-table`, `participants-admin-table`, `skill-domains-admin-table`
+
+Les modals ne sont chargés qu’au montage client (boutons d’action) ; le HTML serveur reste identique (fallback 8×8 px).
+
+## Phase P3 client + dev
+
+- `src/components/features/programs/lazy-modals.tsx` — programme / formation
+- Extension `projects/lazy-modals.tsx` — lieux, signataires, rôles projet, delete
+- Pages lourdes : `project-detail-tabs`, `program-detail-tabs`, `training-cards`, `training-sessions-manager`, `project-team-section`, `program-participants-table`
+- Dev : `npm run dev:turbo` ou `DEV_TURBO=1 npm run dev` (compile Next.js plus rapide en local)
+
+## Phase P4 API (select explicite)
+
+Routes API : `include` → `select` sur champs réellement renvoyés au client :
+
+- `account`, `users`, `users/[id]`, `projects`, `projects/[id]`
+- `projects/[id]/roles`, `admin/trainers`, `admin/trainers/[id]`
+- `programs/.../participants`, `programs/.../feedbacks`
+- `trainings/.../participants`, `trainings/.../certificates`
+- `sessions/.../attendance`, `sessions/.../report`
+- `demo-users` : retrait logs debug timing

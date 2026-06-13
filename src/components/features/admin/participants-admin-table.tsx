@@ -5,9 +5,11 @@ import { Building2, Mail, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { DataTable } from "@/components/ui/data-table";
 import { Badge } from "@/components/ui/badge";
-import { InviteParticipantModal } from "@/components/features/admin/invite-participant-modal";
-import { ParticipantEditModal } from "@/components/features/admin/participant-edit-modal";
-import { DeleteButton } from "@/components/features/projects/delete-button";
+import {
+  LazyDeleteButton as DeleteButton,
+  LazyInviteParticipantModal as InviteParticipantModal,
+  LazyParticipantEditModal as ParticipantEditModal,
+} from "@/components/features/admin/lazy-modals";
 import { countLabel } from "@/lib/format";
 
 type ParticipantRow = {

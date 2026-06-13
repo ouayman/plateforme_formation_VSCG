@@ -1,26 +1,20 @@
-import { CompanyType } from "@prisma/client";
 import { Building2, FolderKanban, Users } from "lucide-react";
 import { requireAdmin } from "@/lib/auth/require";
-import { prisma } from "@/lib/prisma";
+import { loadAdminCompaniesPageData } from "@/lib/loaders/admin-companies";
 import { countLabel } from "@/lib/format";
 import { PageHeader } from "@/components/layout/page-header";
 import { SetBreadcrumb } from "@/components/layout/breadcrumb-context";
 import {
-  CompanyEditButton,
-  CreateCompanyModal,
-} from "@/components/features/admin/company-form-modal";
-import { DeleteButton } from "@/components/features/projects/delete-button";
+  LazyCompanyEditButton as CompanyEditButton,
+  LazyCreateCompanyModal as CreateCompanyModal,
+  LazyDeleteButton as DeleteButton,
+} from "@/components/features/admin/lazy-modals";
 import { DataTable } from "@/components/ui/data-table";
 import { OrgLogo } from "@/components/layout/org-logo";
 
 export default async function AdminCompaniesPage() {
   await requireAdmin();
-
-  const companies = await prisma.company.findMany({
-    where: { type: CompanyType.client },
-    orderBy: { name: "asc" },
-    include: { _count: { select: { users: true, projects: true } } },
-  });
+  const companies = await loadAdminCompaniesPageData();
 
   return (
     <div className="space-y-8">

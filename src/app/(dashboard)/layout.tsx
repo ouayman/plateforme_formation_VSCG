@@ -1,8 +1,13 @@
 import { Suspense } from "react";
 import { redirect } from "next/navigation";
-import { getCurrentUser } from "@/lib/auth/get-current-user";
-import { DashboardShellLoaded } from "@/components/layout/dashboard-shell-loaded";
-import { DashboardShellSkeleton } from "@/components/layout/dashboard-shell-skeleton";
+import { UserType } from "@prisma/client";
+import { loadDashboardShellData } from "@/lib/dashboard-layout-context";
+import { isDemoMode } from "@/lib/demo-mode";
+import {
+  logPrismaRequestSummary,
+  runWithPrismaInstrumentationAsync,
+} from "@/lib/prisma-instrumentation";
+import { DashboardShell } from "@/components/layout/dashboard-shell";
 import DashboardLoading from "@/app/(dashboard)/loading";
 
 export const dynamic = "force-dynamic";
@@ -12,14 +17,38 @@ export default async function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const user = await getCurrentUser();
-  if (!user) redirect("/login");
+  const { user, ctx } = await runWithPrismaInstrumentationAsync(
+    "dashboard-layout",
+    () => loadDashboardShellData()
+  );
+  logPrismaRequestSummary();
+
+  if (!user || !ctx) redirect("/login");
+
+  const isVscg = user.type === UserType.internal;
+  const headerLogoUrl =
+    !isVscg && user.company.logoUrl ? user.company.logoUrl : null;
 
   return (
-    <Suspense fallback={<DashboardShellSkeleton user={user} />}>
-      <DashboardShellLoaded user={user}>
-        <Suspense fallback={<DashboardLoading />}>{children}</Suspense>
-      </DashboardShellLoaded>
-    </Suspense>
+    <DashboardShell
+      isAdmin={user.permissions.isAdmin}
+      showPlanning={ctx.showPlanning}
+      isParticipantOnly={ctx.participantOnly}
+      demoMode={isDemoMode()}
+      userId={user.id}
+      userName={`${user.firstName} ${user.lastName}`}
+      userEmail={user.email}
+      userFirstName={user.firstName}
+      userLastName={user.lastName}
+      userAvatarUrl={user.avatarUrl}
+      organizationName={ctx.organizationName}
+      organizationLogoDarkUrl={ctx.organizationLogoDarkUrl}
+      headerLogoUrl={headerLogoUrl}
+      headerLogoAlt={user.company.name}
+      companyOptions={ctx.companyOptions}
+      activeCompanyId={ctx.activeCompanyId}
+    >
+      <Suspense fallback={<DashboardLoading />}>{children}</Suspense>
+    </DashboardShell>
   );
 }

@@ -1,7 +1,9 @@
 "use client";
 
-import { SkillDomainEditButton, SkillDomainFormModal } from "@/components/features/admin/skill-domain-form-modal";
-import { SkillDomainTrainersModal } from "@/components/features/admin/skill-domain-trainers-modal";
+import {
+  LazySkillDomainEditButton as SkillDomainEditButton,
+  LazySkillDomainTrainersModal as SkillDomainTrainersModal,
+} from "@/components/features/admin/lazy-modals";
 import { DataTable } from "@/components/ui/data-table";
 import { countLabel } from "@/lib/format";
 
@@ -62,5 +64,3 @@ export function SkillDomainsAdminTable({ domains, trainers }: SkillDomainsAdminT
     </DataTable>
   );
 }
-
-export { SkillDomainFormModal };

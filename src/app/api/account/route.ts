@@ -9,9 +9,14 @@ export async function GET() {
 
   const fullUser = await prisma.user.findUniqueOrThrow({
     where: { id: user.id },
-    include: {
+    select: {
+      id: true,
+      email: true,
+      firstName: true,
+      lastName: true,
+      type: true,
       company: { select: { name: true } },
-      globalRoles: true,
+      globalRoles: { select: { role: true } },
       projectRoles: { select: { role: true, projectId: true } },
     },
   });

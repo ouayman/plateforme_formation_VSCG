@@ -12,7 +12,7 @@ import {
 } from "@/lib/loaders/project-detail";
 import { participantRoutes } from "@/lib/routes";
 import { SetBreadcrumb } from "@/components/layout/breadcrumb-context";
-import { ProjectFormModal } from "@/components/features/projects/project-form-modal";
+import { LazyProjectFormModal as ProjectFormModal } from "@/components/features/projects/lazy-modals";
 import { ProjectDetailTabs } from "@/components/features/projects/project-detail-tabs";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";

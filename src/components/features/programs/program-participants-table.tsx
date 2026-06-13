@@ -1,7 +1,7 @@
 "use client";
 
 import { AlertTriangle, Mail } from "lucide-react";
-import { DeleteButton } from "@/components/features/projects/delete-button";
+import { LazyDeleteButton as DeleteButton } from "@/components/features/projects/lazy-modals";
 import { ParticipantTrainingsCell } from "@/components/features/programs/participant-trainings-modal";
 
 type TrainingOption = { id: string; title: string; orderIndex: number };

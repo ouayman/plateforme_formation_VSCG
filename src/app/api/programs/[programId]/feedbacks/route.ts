@@ -32,7 +32,13 @@ export async function GET(
 
   const feedbacks = await prisma.feedback.findMany({
     where: { training: { programId: params.programId } },
-    include: {
+    select: {
+      id: true,
+      trainingId: true,
+      userId: true,
+      rating: true,
+      comment: true,
+      createdAt: true,
       user: { select: { firstName: true, lastName: true, email: true } },
       training: { select: { id: true, title: true } },
     },

@@ -13,9 +13,6 @@ export async function GET() {
     return NextResponse.json({ error: "not_available" }, { status: 404 });
   }
 
-  const routeStart = Date.now();
-
-  const usersStart = Date.now();
   const [users, organizationName] = await Promise.all([
     prisma.user.findMany({
       orderBy: [{ type: "asc" }, { lastName: "asc" }],
@@ -34,7 +31,6 @@ export async function GET() {
     }),
     getCachedOrganizationName(),
   ]);
-  console.log("DEMO USERS QUERY:", Date.now() - usersStart, "ms");
 
   const payload = users.map((user) => ({
     id: user.id,
@@ -51,8 +47,6 @@ export async function GET() {
     })),
     isParticipant: user._count.programs > 0,
   }));
-
-  console.log("DEMO USERS ROUTE:", Date.now() - routeStart, "ms");
 
   return NextResponse.json(payload, { headers: { "Cache-Control": "no-store" } });
 }

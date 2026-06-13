@@ -1,44 +1,16 @@
-import { CompanyType, UserType } from "@prisma/client";
 import { Users } from "lucide-react";
 import { requireAdmin } from "@/lib/auth/require";
-import { prisma } from "@/lib/prisma";
-import { getInternalCompany, getPlatformSettings } from "@/lib/platform-settings";
+import { loadAdminUsersPageData } from "@/lib/loaders/admin-users";
 import { PageHeader } from "@/components/layout/page-header";
 import { SetBreadcrumb } from "@/components/layout/breadcrumb-context";
 import { UsersAdminTable } from "@/components/features/admin/users-admin-table";
 
 export default async function AdminUsersPage() {
   const currentUser = await requireAdmin();
+  const { users, clientCompanies, organizationName, internalCompanyId } =
+    await loadAdminUsersPageData();
 
-  const [users, clientCompanies, settings, internalCompany] = await Promise.all([
-    prisma.user.findMany({
-      where: {
-        OR: [{ type: UserType.internal }, { type: UserType.client }],
-      },
-      orderBy: { createdAt: "desc" },
-      take: 500,
-      select: {
-        id: true,
-        email: true,
-        firstName: true,
-        lastName: true,
-        avatarUrl: true,
-        companyId: true,
-        type: true,
-        loginCount: true,
-        company: { select: { id: true, name: true, type: true, logoUrl: true } },
-        globalRoles: { select: { role: true } },
-      },
-    }),
-    prisma.company.findMany({
-      where: { type: CompanyType.client },
-      orderBy: { name: "asc" },
-    }),
-    getPlatformSettings(),
-    getInternalCompany(),
-  ]);
-
-  if (!internalCompany) {
+  if (!internalCompanyId) {
     throw new Error("Organisation VSCG introuvable. Lancez le seed.");
   }
 
@@ -55,8 +27,8 @@ export default async function AdminUsersPage() {
       <UsersAdminTable
         currentUserId={currentUser.id}
         clientCompanies={clientCompanies}
-        internalCompanyId={internalCompany.id}
-        organizationName={settings.organizationName}
+        internalCompanyId={internalCompanyId}
+        organizationName={organizationName}
         users={users.map((user) => ({
           id: user.id,
           email: user.email,

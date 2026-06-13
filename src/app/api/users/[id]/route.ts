@@ -25,7 +25,15 @@ export async function PATCH(
 
   const user = await prisma.user.findUnique({
     where: { id: params.id },
-    include: { globalRoles: true },
+    select: {
+      id: true,
+      email: true,
+      firstName: true,
+      lastName: true,
+      companyId: true,
+      type: true,
+      globalRoles: { select: { role: true } },
+    },
   });
 
   if (!user) {
@@ -98,9 +106,15 @@ export async function PATCH(
       ...(data.companyId !== undefined && { companyId: data.companyId }),
       ...(data.type !== undefined && { type: data.type }),
     },
-    include: {
+    select: {
+      id: true,
+      email: true,
+      firstName: true,
+      lastName: true,
+      companyId: true,
+      type: true,
       company: { select: { id: true, name: true, type: true } },
-      globalRoles: true,
+      globalRoles: { select: { role: true } },
     },
   });
 

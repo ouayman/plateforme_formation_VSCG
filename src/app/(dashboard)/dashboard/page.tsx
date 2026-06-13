@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { FolderKanban, GraduationCap, Users } from "lucide-react";
 import { requireAuth } from "@/lib/auth/require";
 import { loadDashboardStats } from "@/lib/loaders/dashboard";
-import { isParticipantOnly } from "@/lib/permissions";
+import { isParticipantOnly, resolveParticipantOnlyFast } from "@/lib/permissions";
 import { participantRoutes } from "@/lib/routes";
 import { PageHeader } from "@/components/layout/page-header";
 import { SetBreadcrumb } from "@/components/layout/breadcrumb-context";
@@ -10,8 +10,9 @@ import { StatCard } from "@/components/ui/stat-card";
 
 export default async function DashboardPage() {
   const user = await requireAuth();
-
-  if (await isParticipantOnly(user.id, user.permissions)) {
+  const participantFast = resolveParticipantOnlyFast(user.permissions);
+  if (participantFast === true) redirect(participantRoutes.trainings);
+  if (participantFast === null && (await isParticipantOnly(user.id, user.permissions))) {
     redirect(participantRoutes.trainings);
   }
 

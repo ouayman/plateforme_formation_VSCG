@@ -8,7 +8,13 @@ const nextConfig = {
   productionBrowserSourceMaps: false,
   eslint: { ignoreDuringBuilds: true },
   typescript: { ignoreBuildErrors: true },
+  experimental: {
+    webpackBuildWorker: false,
+  },
   webpack: (config, { dev }) => {
+    if (!dev) {
+      config.cache = false;
+    }
     if (dev) {
       const watchOptions = watchOptionsForDev();
       if (watchOptions) {

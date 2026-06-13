@@ -6,18 +6,21 @@ import {
   loadProjectsPageData,
   serializeProjectListItem,
 } from "@/lib/loaders/projects-list";
-import { isParticipantOnly, isStaff } from "@/lib/permissions";
+import { isParticipantOnly, isStaff, resolveParticipantOnlyFast } from "@/lib/permissions";
 import { participantRoutes } from "@/lib/routes";
 import { PageHeader } from "@/components/layout/page-header";
 import { SetBreadcrumb } from "@/components/layout/breadcrumb-context";
-import { ProjectFormModal } from "@/components/features/projects/project-form-modal";
+import { LazyProjectFormModal as ProjectFormModal } from "@/components/features/projects/lazy-modals";
 import { ProjectsList } from "@/components/features/projects/projects-list";
 import { EmptyState } from "@/components/ui/empty-state";
 
 export default async function ProjectsPage() {
   const user = await requireAuth();
-  const participantOnly = await isParticipantOnly(user.id, user.permissions);
-  if (participantOnly) redirect(participantRoutes.trainings);
+  const participantFast = resolveParticipantOnlyFast(user.permissions);
+  if (participantFast === true) redirect(participantRoutes.trainings);
+  if (participantFast === null && (await isParticipantOnly(user.id, user.permissions))) {
+    redirect(participantRoutes.trainings);
+  }
 
   const canEdit = isStaff(user.permissions);
 

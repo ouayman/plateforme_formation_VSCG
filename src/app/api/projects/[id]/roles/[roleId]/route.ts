@@ -57,7 +57,15 @@ export async function PATCH(
   const updated = await prisma.userProjectRole.update({
     where: { id: params.roleId },
     data,
-    include: {
+    select: {
+      id: true,
+      projectId: true,
+      userId: true,
+      role: true,
+      canAddParticipants: true,
+      canPublishFeed: true,
+      canUnlockCertificates: true,
+      canManageSessions: true,
       user: {
         select: { id: true, firstName: true, lastName: true, email: true, type: true },
       },

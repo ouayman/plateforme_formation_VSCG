@@ -5,10 +5,12 @@ import { Building2, Mail, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { DataTable } from "@/components/ui/data-table";
 import { Badge } from "@/components/ui/badge";
-import { InviteUserModal } from "@/components/features/admin/invite-user-modal";
-import { UserEditModal } from "@/components/features/admin/user-edit-modal";
+import {
+  LazyDeleteButton as DeleteButton,
+  LazyInviteUserModal as InviteUserModal,
+  LazyUserEditModal as UserEditModal,
+} from "@/components/features/admin/lazy-modals";
 import { UserRolesBadges } from "@/components/features/admin/user-roles-badges";
-import { DeleteButton } from "@/components/features/projects/delete-button";
 import { countLabel } from "@/lib/format";
 import { GLOBAL_ROLES } from "@/lib/user-roles";
 import { formatUserType } from "@/lib/user-types";

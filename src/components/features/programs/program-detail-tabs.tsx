@@ -5,7 +5,7 @@ import type { LucideIcon } from "lucide-react";
 import { GraduationCap, MessageSquare, Users } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { SectionBlock } from "@/components/layout/section-block";
-import { TrainingFormModal } from "@/components/features/programs/training-form-modal";
+import { LazyTrainingFormModal as TrainingFormModal } from "@/components/features/programs/lazy-modals";
 import { TrainingCards } from "@/components/features/programs/training-cards";
 import { EmptyState } from "@/components/ui/empty-state";
 import { countLabel } from "@/lib/format";

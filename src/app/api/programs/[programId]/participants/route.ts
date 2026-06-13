@@ -34,7 +34,9 @@ export async function GET(
 
   const participants = await prisma.userProgram.findMany({
     where: { programId: params.programId },
-    include: {
+    select: {
+      id: true,
+      userId: true,
       user: {
         select: {
           id: true,
@@ -157,7 +159,9 @@ export async function POST(
     where: {
       userId_programId: { userId: participantUserId, programId: params.programId },
     },
-    include: {
+    select: {
+      id: true,
+      userId: true,
       user: {
         select: {
           id: true,

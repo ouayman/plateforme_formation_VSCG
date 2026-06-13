@@ -13,10 +13,22 @@ export async function GET(
 
   const project = await prisma.project.findUnique({
     where: { id: params.id },
-    include: {
+    select: {
+      id: true,
+      name: true,
+      companyId: true,
+      startDate: true,
+      endDate: true,
+      deletedAt: true,
       company: { select: { id: true, name: true } },
-      locations: { orderBy: { name: "asc" } },
-      signatories: { orderBy: { name: "asc" } },
+      locations: {
+        select: { id: true, name: true, address: true, instructions: true },
+        orderBy: { name: "asc" },
+      },
+      signatories: {
+        select: { id: true, name: true, title: true, signatureImageUrl: true },
+        orderBy: { name: "asc" },
+      },
       _count: { select: { programs: true } },
     },
   });
@@ -84,7 +96,12 @@ export async function PATCH(
       startDate: new Date(parsed.data.startDate),
       endDate: new Date(parsed.data.endDate),
     },
-    include: {
+    select: {
+      id: true,
+      name: true,
+      companyId: true,
+      startDate: true,
+      endDate: true,
       company: { select: { id: true, name: true } },
       _count: { select: { programs: true, locations: true } },
     },

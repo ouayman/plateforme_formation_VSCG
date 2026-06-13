@@ -4,13 +4,19 @@ import type { LucideIcon } from "lucide-react";
 import { MapPin, PenLine, Route, Users } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { SectionBlock } from "@/components/layout/section-block";
-import { ProgramFormModal } from "@/components/features/programs/program-form-modal";
+import {
+  LazyProgramFormModal as ProgramFormModal,
+} from "@/components/features/programs/lazy-modals";
 import { ProgramCards } from "@/components/features/programs/program-cards";
 import { ProjectCoordinatorsSection } from "@/components/features/projects/project-team-section";
-import { LocationFormModal, LocationEditButton } from "@/components/features/projects/location-form-modal";
-import { SignatoryFormModal, SignatoryEditButton } from "@/components/features/projects/signatory-form-modal";
+import {
+  LazyDeleteButton as DeleteButton,
+  LazyLocationEditButton as LocationEditButton,
+  LazyLocationFormModal as LocationFormModal,
+  LazySignatoryEditButton as SignatoryEditButton,
+  LazySignatoryFormModal as SignatoryFormModal,
+} from "@/components/features/projects/lazy-modals";
 import { SignaturePreview } from "@/components/ui/signature-input";
-import { DeleteButton } from "@/components/features/projects/delete-button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { countLabel } from "@/lib/format";
 

@@ -15,7 +15,15 @@ export async function GET(
 
   const roles = await prisma.userProjectRole.findMany({
     where: { projectId: params.id },
-    include: {
+    select: {
+      id: true,
+      projectId: true,
+      userId: true,
+      role: true,
+      canAddParticipants: true,
+      canPublishFeed: true,
+      canUnlockCertificates: true,
+      canManageSessions: true,
       user: {
         select: { id: true, firstName: true, lastName: true, email: true, type: true },
       },
@@ -54,7 +62,7 @@ export async function POST(
 
   const targetUser = await prisma.user.findUnique({
     where: { id: parsed.data.userId },
-    include: { globalRoles: true },
+    select: { id: true, type: true, companyId: true },
   });
   if (!targetUser) {
     return NextResponse.json({ error: "user_not_found" }, { status: 404 });
@@ -98,7 +106,15 @@ export async function POST(
         canManageSessions: parsed.data.canManageSessions ?? false,
       }),
     },
-    include: {
+    select: {
+      id: true,
+      projectId: true,
+      userId: true,
+      role: true,
+      canAddParticipants: true,
+      canPublishFeed: true,
+      canUnlockCertificates: true,
+      canManageSessions: true,
       user: {
         select: { id: true, firstName: true, lastName: true, email: true, type: true },
       },

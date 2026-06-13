@@ -39,7 +39,14 @@ export async function GET(
 
   const certificates = await prisma.certificate.findMany({
     where,
-    include: {
+    select: {
+      id: true,
+      userId: true,
+      trainingId: true,
+      status: true,
+      unlockedBy: true,
+      unlockedAt: true,
+      generatedAt: true,
       user: { select: { id: true, firstName: true, lastName: true, email: true } },
       unlockedByUser: { select: { firstName: true, lastName: true } },
     },

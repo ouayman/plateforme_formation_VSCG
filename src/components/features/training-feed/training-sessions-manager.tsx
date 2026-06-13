@@ -11,7 +11,7 @@ import {
   DialogContent,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { DeleteButton } from "@/components/features/projects/delete-button";
+import { LazyDeleteButton as DeleteButton } from "@/components/features/projects/lazy-modals";
 import {
   FunctionalStatusSelect,
   LocationSelect,

@@ -4,9 +4,11 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathRefresh } from "@/hooks/use-path-refresh";
 import { ChevronRight, GripVertical } from "lucide-react";
-import { TrainingEditButton } from "@/components/features/programs/training-form-modal";
+import {
+  LazyTrainingEditButton as TrainingEditButton,
+} from "@/components/features/programs/lazy-modals";
 import { TrainingCardTags } from "@/components/features/programs/training-card-tags";
-import { DeleteButton } from "@/components/features/projects/delete-button";
+import { LazyDeleteButton as DeleteButton } from "@/components/features/projects/lazy-modals";
 import { cn } from "@/lib/utils";
 import type { TrainingLifecycleStatus } from "@/lib/training-ui";
 

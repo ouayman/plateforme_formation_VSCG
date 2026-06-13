@@ -15,7 +15,13 @@ export async function GET() {
   const projects = await prisma.project.findMany({
     where: projectListFilter(user.id, user.permissions),
     orderBy: { startDate: "desc" },
-    include: {
+    select: {
+      id: true,
+      name: true,
+      companyId: true,
+      startDate: true,
+      endDate: true,
+      deletedAt: true,
       company: { select: { id: true, name: true } },
       _count: { select: { programs: true, locations: true } },
     },
@@ -49,7 +55,12 @@ export async function POST(req: Request) {
       startDate: new Date(parsed.data.startDate),
       endDate: new Date(parsed.data.endDate),
     },
-    include: {
+    select: {
+      id: true,
+      name: true,
+      companyId: true,
+      startDate: true,
+      endDate: true,
       company: { select: { id: true, name: true } },
       _count: { select: { programs: true, locations: true } },
     },

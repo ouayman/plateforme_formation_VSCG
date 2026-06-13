@@ -5,6 +5,16 @@ import { prisma } from "@/lib/prisma";
 import { canManageAttendance } from "@/lib/permissions";
 import { attendanceUpdateSchema } from "@/lib/validations/participant";
 
+const sessionParticipantSelect = {
+  id: true,
+  sessionId: true,
+  userId: true,
+  attendanceStatus: true,
+  user: {
+    select: { id: true, firstName: true, lastName: true, email: true },
+  },
+} as const;
+
 async function getSessionContext(sessionId: string) {
   return prisma.session.findUnique({
     where: { id: sessionId },
@@ -26,11 +36,7 @@ export async function GET(
 
   const participants = await prisma.sessionParticipant.findMany({
     where: { sessionId: params.sessionId },
-    include: {
-      user: {
-        select: { id: true, firstName: true, lastName: true, email: true },
-      },
-    },
+    select: sessionParticipantSelect,
     orderBy: { user: { lastName: "asc" } },
   });
 
@@ -91,11 +97,7 @@ export async function PATCH(
 
   const participants = await prisma.sessionParticipant.findMany({
     where: { sessionId: params.sessionId },
-    include: {
-      user: {
-        select: { id: true, firstName: true, lastName: true, email: true },
-      },
-    },
+    select: sessionParticipantSelect,
     orderBy: { user: { lastName: "asc" } },
   });
 

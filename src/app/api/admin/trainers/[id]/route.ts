@@ -12,9 +12,16 @@ async function getTrainer(userId: string) {
       id: userId,
       globalRoles: { some: { role: GlobalRole.TRAINER } },
     },
-    include: {
+    select: {
+      id: true,
+      email: true,
+      firstName: true,
+      lastName: true,
+      phone: true,
       skillDomains: {
-        include: { skillDomain: { select: { id: true, name: true } } },
+        select: {
+          skillDomain: { select: { id: true, name: true } },
+        },
       },
     },
   });

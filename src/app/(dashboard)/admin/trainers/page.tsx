@@ -1,38 +1,22 @@
-import { GlobalRole } from "@prisma/client";
 import { GraduationCap } from "lucide-react";
 import { requireAdmin } from "@/lib/auth/require";
-import { prisma } from "@/lib/prisma";
+import { loadAdminTrainersPageData } from "@/lib/loaders/admin-trainers";
 import { countLabel } from "@/lib/format";
 import { PageHeader } from "@/components/layout/page-header";
 import { SetBreadcrumb } from "@/components/layout/breadcrumb-context";
 import { DataTable } from "@/components/ui/data-table";
 import { SkillDomainBadges } from "@/components/features/admin/skill-domain-badges";
 import {
-  TrainerEditButton,
-  TrainerFormModal,
-} from "@/components/features/admin/trainer-form-modal";
-import { DeleteButton } from "@/components/features/projects/delete-button";
-import { TrainerUnavailabilityModal } from "@/components/features/admin/trainer-unavailability-modal";
+  LazyDeleteButton as DeleteButton,
+  LazyTrainerEditButton as TrainerEditButton,
+  LazyTrainerFormModal as TrainerFormModal,
+  LazyTrainerUnavailabilityModal as TrainerUnavailabilityModal,
+} from "@/components/features/admin/lazy-modals";
 
 export default async function AdminTrainersPage() {
   await requireAdmin();
 
-  const [trainers, skillDomains] = await Promise.all([
-    prisma.user.findMany({
-      where: { globalRoles: { some: { role: GlobalRole.TRAINER } } },
-      orderBy: { lastName: "asc" },
-      include: {
-        skillDomains: {
-          include: { skillDomain: { select: { id: true, name: true } } },
-        },
-      },
-    }),
-    prisma.skillDomain.findMany({
-      orderBy: { orderIndex: "asc" },
-      select: { id: true, name: true },
-    }),
-  ]);
-
+  const [trainers, skillDomains] = await loadAdminTrainersPageData();
   const domainOptions = skillDomains.map((d) => ({ id: d.id, name: d.name }));
 
   return (

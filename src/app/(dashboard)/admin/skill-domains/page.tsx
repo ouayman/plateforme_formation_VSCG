@@ -1,31 +1,14 @@
-import { GlobalRole } from "@prisma/client";
 import { Layers } from "lucide-react";
 import { requireAdmin } from "@/lib/auth/require";
-import { prisma } from "@/lib/prisma";
+import { loadAdminSkillDomainsPageData } from "@/lib/loaders/admin-skill-domains";
 import { PageHeader } from "@/components/layout/page-header";
 import { SetBreadcrumb } from "@/components/layout/breadcrumb-context";
-import {
-  SkillDomainFormModal,
-  SkillDomainsAdminTable,
-} from "@/components/features/admin/skill-domains-admin-table";
+import { LazySkillDomainFormModal as SkillDomainFormModal } from "@/components/features/admin/lazy-modals";
+import { SkillDomainsAdminTable } from "@/components/features/admin/skill-domains-admin-table";
 
 export default async function AdminSkillDomainsPage() {
   await requireAdmin();
-
-  const [domains, trainers] = await Promise.all([
-    prisma.skillDomain.findMany({
-      orderBy: { orderIndex: "asc" },
-      include: {
-        trainers: { select: { userId: true } },
-        _count: { select: { trainings: true } },
-      },
-    }),
-    prisma.user.findMany({
-      where: { globalRoles: { some: { role: GlobalRole.TRAINER } } },
-      orderBy: { lastName: "asc" },
-      select: { id: true, firstName: true, lastName: true, email: true },
-    }),
-  ]);
+  const [domains, trainers] = await loadAdminSkillDomainsPageData();
 
   return (
     <div className="space-y-8">

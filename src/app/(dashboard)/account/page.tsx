@@ -1,6 +1,6 @@
 import { UserCircle } from "lucide-react";
 import { requireAuth } from "@/lib/auth/require";
-import { prisma } from "@/lib/prisma";
+import { loadAccountPageData } from "@/lib/loaders/account";
 import { PageHeader } from "@/components/layout/page-header";
 import { SetBreadcrumb } from "@/components/layout/breadcrumb-context";
 import { AccountForm } from "@/components/features/account/account-form";
@@ -8,15 +8,7 @@ import type { GlobalRoleValue } from "@/lib/user-roles";
 
 export default async function AccountPage() {
   const user = await requireAuth();
-
-  const fullUser = await prisma.user.findUniqueOrThrow({
-    where: { id: user.id },
-    include: {
-      company: { select: { name: true } },
-      globalRoles: true,
-      projectRoles: { select: { role: true, projectId: true } },
-    },
-  });
+  const fullUser = await loadAccountPageData(user.id);
 
   return (
     <div className="space-y-8">

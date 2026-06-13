@@ -1,14 +1,14 @@
 import { Settings } from "lucide-react";
 import { requireAdmin } from "@/lib/auth/require";
-import { getPlatformSettings } from "@/lib/platform-settings";
+import { loadAdminSettingsPageData } from "@/lib/loaders/admin-settings";
 import { PageHeader } from "@/components/layout/page-header";
 import { SetBreadcrumb } from "@/components/layout/breadcrumb-context";
 import { SectionBlock } from "@/components/layout/section-block";
-import { PlatformSettingsForm } from "@/components/features/admin/platform-settings-form";
+import { LazyPlatformSettingsForm as PlatformSettingsForm } from "@/components/features/admin/lazy-modals";
 
 export default async function AdminSettingsPage() {
   await requireAdmin();
-  const settings = await getPlatformSettings();
+  const settings = await loadAdminSettingsPageData();
 
   return (
     <div className="space-y-8">
