@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { usePathRefresh } from "@/hooks/use-path-refresh";
 import { Mail, Shield, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,7 +26,7 @@ type AccountFormProps = {
 };
 
 export function AccountForm({ userId, initial }: AccountFormProps) {
-  const router = useRouter();
+  const { refreshCurrentPath } = usePathRefresh();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
@@ -55,7 +55,7 @@ export function AccountForm({ userId, initial }: AccountFormProps) {
     }
 
     setSuccess(true);
-    router.refresh();
+    refreshCurrentPath();
   }
 
   const roleLabels = [

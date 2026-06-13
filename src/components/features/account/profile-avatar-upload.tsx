@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { usePathRefresh } from "@/hooks/use-path-refresh";
 import { ImagePlus, Loader2, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -25,7 +25,7 @@ export function ProfileAvatarUpload({
   uploadUrl,
   canRemove = true,
 }: ProfileAvatarUploadProps) {
-  const router = useRouter();
+  const { refreshCurrentPath } = usePathRefresh();
   const inputRef = useRef<HTMLInputElement>(null);
   const [avatarUrl, setAvatarUrl] = useState(initialAvatarUrl ?? null);
   const [uploading, setUploading] = useState(false);
@@ -52,7 +52,7 @@ export function ProfileAvatarUpload({
 
     const data = (await res.json()) as { avatarUrl?: string; path?: string };
     setAvatarUrl(data.avatarUrl ?? data.path ?? null);
-    router.refresh();
+    refreshCurrentPath();
     if (inputRef.current) inputRef.current.value = "";
   }
 
@@ -67,7 +67,7 @@ export function ProfileAvatarUpload({
       return;
     }
     setAvatarUrl(null);
-    router.refresh();
+    refreshCurrentPath();
   }
 
   const accept = AVATAR_UPLOAD.ALLOWED_EXTENSIONS.map((ext) =>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { usePathRefresh } from "@/hooks/use-path-refresh";
 import { Building2, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useEffect, useRef, useState } from "react";
@@ -13,7 +13,7 @@ type CompanySwitcherProps = {
 };
 
 export function CompanySwitcher({ companies, activeCompanyId }: CompanySwitcherProps) {
-  const router = useRouter();
+  const { refreshCurrentPath } = usePathRefresh();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
@@ -41,7 +41,7 @@ export function CompanySwitcher({ companies, activeCompanyId }: CompanySwitcherP
     });
     setLoading(false);
     setOpen(false);
-    router.refresh();
+    refreshCurrentPath();
   }
 
   return (

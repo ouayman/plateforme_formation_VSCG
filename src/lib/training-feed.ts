@@ -1,6 +1,8 @@
+import "server-only";
+
 import { ProjectRole, TrainingPostType, UserType } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import { canManageProjects, getUserPermissions, isStaff } from "@/lib/permissions";
+import { canManageProjects, getUserPermissions, isStaff, type UserPermissions } from "@/lib/permissions";
 import type { ReactionCounts, ReactionType } from "@/lib/training-feed-utils";
 
 export async function getTrainingProjectId(trainingId: string) {
@@ -11,14 +13,18 @@ export async function getTrainingProjectId(trainingId: string) {
   return training?.program ?? null;
 }
 
-export async function canPublishTrainingFeed(userId: string, projectId: string) {
-  if (await canManageProjects(userId)) return true;
+export async function canPublishTrainingFeed(
+  userId: string,
+  projectId: string,
+  perms?: UserPermissions
+) {
+  if (await canManageProjects(userId, perms)) return true;
 
-  const perms = await getUserPermissions(userId);
-  if (perms.isTrainer) return true;
+  const p = perms ?? (await getUserPermissions(userId));
+  if (p.isTrainer) return true;
 
   if (
-    perms.projectRoles.some(
+    p.projectRoles.some(
       (r) => r.projectId === projectId && r.role === ProjectRole.TRAINER
     )
   ) {
@@ -65,9 +71,9 @@ export function trainingPostVisibilityFilter(userId: string, staffView: boolean)
   };
 }
 
-export async function isStaffFeedViewer(userId: string) {
-  const perms = await getUserPermissions(userId);
-  return isStaff(perms) || perms.isTrainer;
+export async function isStaffFeedViewer(userId: string, perms?: UserPermissions) {
+  const p = perms ?? (await getUserPermissions(userId));
+  return isStaff(p) || p.isTrainer;
 }
 
 export function serializeTrainingPost(

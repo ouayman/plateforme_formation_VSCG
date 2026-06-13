@@ -1,16 +1,11 @@
+import "server-only";
+
 import { AttendanceStatus, CertificateStatus, SessionStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import { computeAttendancePercent } from "@/lib/attendance-percent";
 import { getActiveTrainingParticipantIds } from "@/lib/user-training";
 
-export function computeAttendancePercent(
-  sessions: { attendanceStatus: AttendanceStatus | null }[]
-) {
-  if (sessions.length === 0) return null;
-  const eligible = sessions.filter(
-    (s) => s.attendanceStatus !== AttendanceStatus.absent
-  ).length;
-  return Math.round((eligible / sessions.length) * 100);
-}
+export { computeAttendancePercent } from "@/lib/attendance-percent";
 
 export async function isTrainingFullyCompleted(trainingId: string) {
   const sessions = await prisma.session.findMany({

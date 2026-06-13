@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { usePathRefresh } from "@/hooks/use-path-refresh";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -22,6 +23,7 @@ export function LoginForm({
   organizationLogoLightUrl = BRANDING.DEFAULT_LOGO_LIGHT,
 }: LoginFormProps) {
   const router = useRouter();
+  const { refreshCurrentPath } = usePathRefresh();
   const [step, setStep] = useState<"email" | "otp">("email");
   const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
@@ -75,7 +77,7 @@ export function LoginForm({
     }
 
     router.push("/dashboard");
-    router.refresh();
+    refreshCurrentPath();
   }
 
   return (

@@ -48,9 +48,9 @@ export async function requireProjectAccessApi(projectId: string) {
   if (!user) {
     return { error: NextResponse.json({ error: "unauthorized" }, { status: 401 }) };
   }
-  const allowed = await canAccessProject(user.id, projectId);
+  const allowed = await canAccessProject(user.id, projectId, user.permissions);
   if (!allowed) {
     return { error: NextResponse.json({ error: "forbidden" }, { status: 403 }) };
   }
-  return { user, canEdit: await canManageProjects(user.id) };
+  return { user, canEdit: await canManageProjects(user.id, user.permissions) };
 }

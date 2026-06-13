@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
+import { useSoftRefresh } from "@/hooks/use-soft-refresh";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -20,7 +21,8 @@ type AttendanceEditorProps = {
 };
 
 export function AttendanceEditor({ sessionId, participants, canEdit }: AttendanceEditorProps) {
-  const router = useRouter();
+  const pathname = usePathname();
+  const { refresh } = useSoftRefresh();
   const [loading, setLoading] = useState(false);
   const [statuses, setStatuses] = useState<Record<string, "present" | "absent" | null>>(
     Object.fromEntries(participants.map((p) => [p.userId, p.attendanceStatus]))
@@ -43,7 +45,7 @@ export function AttendanceEditor({ sessionId, participants, canEdit }: Attendanc
       }),
     });
     setLoading(false);
-    router.refresh();
+    refresh(pathname);
   }
 
   const hasChanges = participants.some((p) => statuses[p.userId] !== p.attendanceStatus);

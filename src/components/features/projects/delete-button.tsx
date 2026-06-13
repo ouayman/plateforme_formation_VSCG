@@ -1,7 +1,7 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { Trash2 } from "lucide-react";
+import { usePathRefresh } from "@/hooks/use-path-refresh";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -18,13 +18,16 @@ export function DeleteButton({
   onDeleted,
   className,
 }: DeleteButtonProps) {
-  const router = useRouter();
+  const { refreshCurrentPath } = usePathRefresh();
 
   async function handleDelete() {
     if (!confirm(confirmMessage)) return;
     await fetch(url, { method: "DELETE" });
-    onDeleted?.();
-    router.refresh();
+    if (onDeleted) {
+      onDeleted();
+    } else {
+      refreshCurrentPath();
+    }
   }
 
   return (

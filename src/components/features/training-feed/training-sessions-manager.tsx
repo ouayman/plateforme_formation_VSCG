@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useSoftRefresh } from "@/hooks/use-soft-refresh";
 import { Loader2, Pencil, Plus, Settings2, Trash2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -176,7 +176,7 @@ function CompactSessionFields({
   bulkRows?: DraftRow[];
   showStatus?: boolean;
   allowCancelled?: boolean;
-  externalConflicts?: Record<string, import("@/lib/session-conflicts").TrainerConflictInfo[]>;
+  externalConflicts?: Record<string, import("@/lib/session-conflicts-types").TrainerConflictInfo[]>;
 }) {
   const scheduleReady = isSessionScheduleReady(form);
   const { conflicts: serverConflicts } = useTrainerConflicts(
@@ -396,7 +396,7 @@ export function TrainingSessionsManager({
   onOpenChange,
   hideTrigger = false,
 }: TrainingSessionsManagerProps) {
-  const router = useRouter();
+  const { refresh } = useSoftRefresh();
   const [internalOpen, setInternalOpen] = useState(false);
   const open = controlledOpen ?? internalOpen;
   const setOpen = onOpenChange ?? setInternalOpen;
@@ -511,7 +511,7 @@ export function TrainingSessionsManager({
     setEditingId(null);
     setEditForm(null);
     await loadSessions();
-    router.refresh();
+    refresh(`/trainings/${trainingId}`);
   }
 
   function startEdit(session: SessionRow) {
@@ -738,7 +738,7 @@ export function TrainingSessionsManager({
                             url={`/api/trainings/${trainingId}/sessions/${session.id}`}
                             onDeleted={() => {
                               void loadSessions();
-                              router.refresh();
+                              refresh(`/trainings/${trainingId}`);
                             }}
                           />
                         </div>

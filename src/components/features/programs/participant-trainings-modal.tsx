@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { usePathRefresh } from "@/hooks/use-path-refresh";
 import { GraduationCap, UserMinus, UserPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -35,7 +35,7 @@ export function ParticipantTrainingsModal({
   canManage,
   trigger,
 }: ParticipantTrainingsModalProps) {
-  const router = useRouter();
+  const { refreshCurrentPath } = usePathRefresh();
   const [open, setOpen] = useState(false);
   const [pending, setPending] = useState<string | null>(null);
 
@@ -50,7 +50,7 @@ export function ParticipantTrainingsModal({
       body: JSON.stringify({ trainingId }),
     });
     setPending(null);
-    router.refresh();
+    refreshCurrentPath();
   }
 
   async function unassignTraining(trainingId: string) {
@@ -60,7 +60,7 @@ export function ParticipantTrainingsModal({
       { method: "DELETE" }
     );
     setPending(null);
-    router.refresh();
+    refreshCurrentPath();
   }
 
   return (

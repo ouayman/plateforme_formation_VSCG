@@ -11,7 +11,7 @@ import { StatCard } from "@/components/ui/stat-card";
 export default async function DashboardPage() {
   const user = await requireAuth();
 
-  if (await isParticipantOnly(user.id)) {
+  if (await isParticipantOnly(user.id, user.permissions)) {
     redirect(participantRoutes.trainings);
   }
 

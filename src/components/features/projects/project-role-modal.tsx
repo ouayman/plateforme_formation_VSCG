@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { usePathRefresh } from "@/hooks/use-path-refresh";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -33,7 +33,7 @@ export function ProjectRoleModal({
   coordinatorUsers,
   existingCoordinatorIds,
 }: ProjectRoleModalProps) {
-  const router = useRouter();
+  const { refreshCurrentPath } = usePathRefresh();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -85,7 +85,7 @@ export function ProjectRoleModal({
     }
 
     setOpen(false);
-    router.refresh();
+    refreshCurrentPath();
   }
 
   return (

@@ -144,8 +144,6 @@ export function FeedSidebar({
       {canManageCertificates && (
         <FeedTrainingParticipantsSection
           trainingId={trainingId}
-          certificates={certificates}
-          availableParticipants={availableParticipants}
           canManage={canManageParticipants}
           collapsible={staffSidebar}
         />

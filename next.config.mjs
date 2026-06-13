@@ -1,4 +1,6 @@
 /** @type {import('next').NextConfig} */
+import { watchOptionsForDev } from "./scripts/file-watcher-polling.mjs";
+
 const nextConfig = {
   output: "standalone",
   poweredByHeader: false,
@@ -8,12 +10,10 @@ const nextConfig = {
   typescript: { ignoreBuildErrors: true },
   webpack: (config, { dev }) => {
     if (dev) {
-      // OneDrive / Windows: polling avoids file watcher hangs
-      config.watchOptions = {
-        poll: 1000,
-        aggregateTimeout: 300,
-        ignored: ["**/node_modules/**", "**/.git/**", "**/uploads/**"],
-      };
+      const watchOptions = watchOptionsForDev();
+      if (watchOptions) {
+        config.watchOptions = watchOptions;
+      }
     }
     return config;
   },

@@ -1,74 +1,95 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { UserPlus, UserMinus } from "lucide-react";
 import { FeedParticipantsAdminPanel } from "@/components/features/training-feed/feed-certificate-panel";
 import { FeedSidebarSection } from "@/components/features/training-feed/feed-sidebar-section";
+import { useTrainingFeed } from "@/components/features/training-feed/training-feed-context";
 import { Users } from "lucide-react";
-
-type ParticipantUser = {
-  id: string;
-  firstName: string;
-  lastName: string;
-  email: string;
-};
-
-type CertificateRow = {
-  userId: string;
-  status: "locked" | "unlocked";
-  attendancePercent: number | null;
-  user: { firstName: string; lastName: string; email: string };
-};
 
 type FeedTrainingParticipantsSectionProps = {
   trainingId: string;
-  certificates: CertificateRow[];
-  availableParticipants: ParticipantUser[];
   canManage: boolean;
   collapsible?: boolean;
 };
 
 export function FeedTrainingParticipantsSection({
   trainingId,
-  certificates,
-  availableParticipants,
   canManage,
   collapsible = false,
 }: FeedTrainingParticipantsSectionProps) {
-  const router = useRouter();
+  const {
+    certificates,
+    availableParticipants,
+    assignParticipant,
+    unassignParticipant,
+  } = useTrainingFeed();
   const [pending, setPending] = useState<string | null>(null);
   const [selectedUserId, setSelectedUserId] = useState("");
 
   async function assign(userId: string) {
+    const user = availableParticipants.find((p) => p.id === userId);
+    if (!user) return;
+
     setPending(userId);
-    await fetch(`/api/trainings/${trainingId}/participants`, {
+    const optimisticCertificate = {
+      userId: user.id,
+      status: "locked" as const,
+      attendancePercent: null,
+      user: {
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.email,
+      },
+    };
+    assignParticipant(user, optimisticCertificate);
+
+    const res = await fetch(`/api/trainings/${trainingId}/participants`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ userId }),
     });
+
     setPending(null);
     setSelectedUserId("");
-    router.refresh();
+
+    if (!res.ok) {
+      unassignParticipant(userId);
+    }
   }
 
   async function unassign(userId: string) {
     if (!confirm("Retirer ce participant de la formation ? Il n'aura plus accès au feed.")) {
       return;
     }
+
+    const snapshot = certificates.find((c) => c.userId === userId);
     setPending(`rm:${userId}`);
-    await fetch(`/api/trainings/${trainingId}/participants?userId=${userId}`, {
+    unassignParticipant(userId);
+
+    const res = await fetch(`/api/trainings/${trainingId}/participants?userId=${userId}`, {
       method: "DELETE",
     });
+
     setPending(null);
-    router.refresh();
+
+    if (!res.ok && snapshot) {
+      assignParticipant(
+        {
+          id: snapshot.userId,
+          firstName: snapshot.user.firstName,
+          lastName: snapshot.user.lastName,
+          email: snapshot.user.email,
+        },
+        snapshot
+      );
+    }
   }
 
   return (
     <>
       <FeedParticipantsAdminPanel
         trainingId={trainingId}
-        certificates={certificates}
         collapsible={collapsible}
         onUnassign={canManage ? unassign : undefined}
         unassignPending={pending}

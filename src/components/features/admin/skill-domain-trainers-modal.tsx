@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { usePathRefresh } from "@/hooks/use-path-refresh";
 import { Search, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -35,7 +35,7 @@ export function SkillDomainTrainersModal({
   trainers,
   assignedTrainerIds,
 }: SkillDomainTrainersModalProps) {
-  const router = useRouter();
+  const { refreshCurrentPath } = usePathRefresh();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -81,7 +81,7 @@ export function SkillDomainTrainersModal({
     }
 
     setOpen(false);
-    router.refresh();
+    refreshCurrentPath();
   }
 
   return (

@@ -2,6 +2,7 @@ import { execSync, spawn } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { needsFileWatcherPolling } from "./file-watcher-polling.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(__dirname, "..");
@@ -83,15 +84,24 @@ cleanNextCache();
 
 log(`Démarrage sur http://localhost:${port}`);
 
+const usePolling = needsFileWatcherPolling(root);
+if (usePolling) {
+  log("File watcher : polling (OneDrive / WEBPACK_POLL=true)");
+} else {
+  log("File watcher : natif (sans polling)");
+}
+
+const devEnv = { ...process.env };
+if (usePolling) {
+  devEnv.WATCHPACK_POLLING = "true";
+  devEnv.WATCHPACK_POLLING_INTERVAL = process.env.WEBPACK_POLL_INTERVAL ?? "1000";
+  devEnv.CHOKIDAR_USEPOLLING = "true";
+}
+
 const child = spawn(process.execPath, [nextBin, "dev", "--port", port], {
   cwd: root,
   stdio: "inherit",
-  env: {
-    ...process.env,
-    WATCHPACK_POLLING: "true",
-    WATCHPACK_POLLING_INTERVAL: "1000",
-    CHOKIDAR_USEPOLLING: "true",
-  },
+  env: devEnv,
 });
 
 child.on("exit", (code, signal) => {

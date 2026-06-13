@@ -1,7 +1,6 @@
 "use client";
 
 import Image from "next/image";
-import { useRouter } from "next/navigation";
 import {
   Download,
   ExternalLink,
@@ -12,6 +11,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { useState } from "react";
+import { useTrainingFeed } from "@/components/features/training-feed/training-feed-context";
 import { Button } from "@/components/ui/button";
 import { UserAvatar } from "@/components/ui/user-avatar";
 import { formatRelativeTime } from "@/lib/format";
@@ -81,7 +81,7 @@ export function FeedPostCard({
   className,
   animationIndex = 0,
 }: FeedPostCardProps) {
-  const router = useRouter();
+  const { removePost, updatePost, prependPost } = useTrainingFeed();
   const [menuOpen, setMenuOpen] = useState(false);
   const [editing, setEditing] = useState(false);
   const [editText, setEditText] = useState(post.text ?? "");
@@ -93,18 +93,36 @@ export function FeedPostCard({
 
   async function handleDelete() {
     if (!confirm("Supprimer cette publication ?")) return;
-    await fetch(`/api/trainings/${trainingId}/posts/${post.id}`, { method: "DELETE" });
-    router.refresh();
+    removePost(post.id);
+
+    const res = await fetch(`/api/trainings/${trainingId}/posts/${post.id}`, {
+      method: "DELETE",
+    });
+    if (!res.ok) {
+      prependPost(post);
+    }
   }
 
   async function handleSaveEdit() {
-    await fetch(`/api/trainings/${trainingId}/posts/${post.id}`, {
+    const nextText = editText.trim() || null;
+    const previousText = post.text;
+    updatePost(post.id, { text: nextText });
+    setEditing(false);
+
+    const res = await fetch(`/api/trainings/${trainingId}/posts/${post.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text: editText.trim() || null }),
+      body: JSON.stringify({ text: nextText }),
     });
-    setEditing(false);
-    router.refresh();
+
+    if (!res.ok) {
+      updatePost(post.id, { text: previousText });
+      setEditing(true);
+      return;
+    }
+
+    const updated = (await res.json()) as FeedPost;
+    updatePost(post.id, updated);
   }
 
   const author = post.author;

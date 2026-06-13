@@ -1,4 +1,6 @@
 import { CompanyType } from "@prisma/client";
+import { cache } from "react";
+import { revalidateTag, unstable_cache } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { BRANDING } from "@/lib/constants";
 
@@ -16,16 +18,24 @@ const DEFAULT_SETTINGS: PlatformSettingsData = {
   welcomeSignatory: "L'équipe VSCG",
 };
 
-export async function getPlatformSettings(): Promise<PlatformSettingsData> {
-  const row = await prisma.platformSettings.findUnique({ where: { id: "default" } });
-  if (!row) return DEFAULT_SETTINGS;
-  return {
-    organizationName: row.organizationName,
-    logoDarkUrl: row.logoDarkUrl || DEFAULT_SETTINGS.logoDarkUrl,
-    logoLightUrl: row.logoLightUrl || DEFAULT_SETTINGS.logoLightUrl,
-    welcomeSignatory: row.welcomeSignatory || DEFAULT_SETTINGS.welcomeSignatory,
-  };
-}
+const loadPlatformSettingsFromDb = unstable_cache(
+  async (): Promise<PlatformSettingsData> => {
+    const row = await prisma.platformSettings.findUnique({ where: { id: "default" } });
+    if (!row) return DEFAULT_SETTINGS;
+    return {
+      organizationName: row.organizationName,
+      logoDarkUrl: row.logoDarkUrl || DEFAULT_SETTINGS.logoDarkUrl,
+      logoLightUrl: row.logoLightUrl || DEFAULT_SETTINGS.logoLightUrl,
+      welcomeSignatory: row.welcomeSignatory || DEFAULT_SETTINGS.welcomeSignatory,
+    };
+  },
+  ["platform-settings"],
+  { revalidate: 60, tags: ["platform-settings"] }
+);
+
+export const getPlatformSettings = cache(async (): Promise<PlatformSettingsData> => {
+  return loadPlatformSettingsFromDb();
+});
 
 export async function getInternalCompany() {
   return prisma.company.findFirst({
@@ -90,6 +100,9 @@ export async function updatePlatformSettings(data: PlatformSettingsData) {
       logoLightUrl: data.logoLightUrl,
       welcomeSignatory: data.welcomeSignatory,
     },
+  }).then((result) => {
+    revalidateTag("platform-settings");
+    return result;
   });
 }
 
@@ -103,5 +116,6 @@ export async function updatePlatformBrandImage(
       ? { ...current, logoDarkUrl: storedPath }
       : { ...current, logoLightUrl: storedPath };
   await updatePlatformSettings(next);
+  revalidateTag("platform-settings");
   return next;
 }

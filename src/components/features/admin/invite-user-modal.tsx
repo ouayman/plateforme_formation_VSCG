@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { usePathRefresh } from "@/hooks/use-path-refresh";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,7 +25,7 @@ type InviteUserModalProps = {
 };
 
 export function InviteUserModal({ clientCompanies, internalCompanyId }: InviteUserModalProps) {
-  const router = useRouter();
+  const { refreshCurrentPath } = usePathRefresh();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -100,7 +100,7 @@ export function InviteUserModal({ clientCompanies, internalCompanyId }: InviteUs
 
     setOpen(false);
     resetForm();
-    router.refresh();
+    refreshCurrentPath();
   }
 
   return (

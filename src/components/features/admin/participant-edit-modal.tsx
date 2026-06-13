@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { usePathRefresh } from "@/hooks/use-path-refresh";
 import { Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -32,7 +32,7 @@ type ParticipantEditModalProps = {
 };
 
 export function ParticipantEditModal({ participant, clientCompanies }: ParticipantEditModalProps) {
-  const router = useRouter();
+  const { refreshCurrentPath } = usePathRefresh();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -69,7 +69,7 @@ export function ParticipantEditModal({ participant, clientCompanies }: Participa
     }
 
     setOpen(false);
-    router.refresh();
+    refreshCurrentPath();
   }
 
   return (

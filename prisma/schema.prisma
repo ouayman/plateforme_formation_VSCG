@@ -381,6 +381,8 @@ model Session {
   trainers     SessionTrainer[]
 
   @@unique([trainingId, startDatetime])
+  @@index([trainingId, status])
+  @@index([trainerId, startDatetime])
   @@map("sessions")
 }
 
@@ -393,6 +395,7 @@ model SessionTrainer {
   user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([sessionId, userId])
+  @@index([userId])
   @@map("session_trainers")
 }
 
@@ -475,6 +478,7 @@ model Feedback {
   user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([trainingId, userId])
+  @@index([trainingId, createdAt(sort: Desc)])
   @@map("feedbacks")
 }
 

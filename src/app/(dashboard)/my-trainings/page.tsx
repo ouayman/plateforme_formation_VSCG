@@ -13,7 +13,7 @@ export default async function MyTrainingsPage() {
   const trainings = await getParticipantTrainings(user.id, activeCompanyId);
 
   if (trainings.length === 0) {
-    const participantOnly = await isParticipantOnly(user.id);
+    const participantOnly = await isParticipantOnly(user.id, user.permissions);
     if (!participantOnly) redirect("/dashboard");
   }
 

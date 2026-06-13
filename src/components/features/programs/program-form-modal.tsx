@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { usePathRefresh } from "@/hooks/use-path-refresh";
 import { Pencil, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -35,6 +36,7 @@ export function ProgramFormModal({
   nextOrderIndex = 0,
 }: ProgramFormModalProps) {
   const router = useRouter();
+  const { refreshCurrentPath } = usePathRefresh();
   const isEdit = !!program;
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -79,7 +81,7 @@ export function ProgramFormModal({
       const data = await res.json();
       router.push(`/projects/${projectId}/programs/${data.id}`);
     }
-    router.refresh();
+    refreshCurrentPath();
   }
 
   async function handleDelete() {
@@ -100,7 +102,7 @@ export function ProgramFormModal({
 
     setOpen(false);
     router.push(`/projects/${projectId}`);
-    router.refresh();
+    refreshCurrentPath();
   }
 
   return (

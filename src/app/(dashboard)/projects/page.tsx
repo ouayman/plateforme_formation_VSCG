@@ -38,7 +38,7 @@ function serializeProject(project: {
 
 export default async function ProjectsPage() {
   const user = await requireAuth();
-  const participantOnly = await isParticipantOnly(user.id);
+  const participantOnly = await isParticipantOnly(user.id, user.permissions);
   if (participantOnly) redirect(participantRoutes.trainings);
 
   const canEdit = isStaff(user.permissions);

@@ -23,85 +23,121 @@ export default async function ProgramDetailPage({
   params: { id: string; programId: string };
 }) {
   const user = await requireAuth();
-  const allowed = await canAccessProgram(user.id, params.programId);
+
+  const [participantOnly, allowed] = await Promise.all([
+    isParticipantOnly(user.id, user.permissions),
+    canAccessProgram(user.id, params.programId, user.permissions),
+  ]);
+
   if (!allowed) redirect("/projects");
+  if (participantOnly) redirect(participantRoutes.trainings);
 
-  if (await isParticipantOnly(user.id)) {
-    redirect(participantRoutes.trainings);
-  }
-
-  const program = await prisma.program.findUnique({
-    where: { id: params.programId, projectId: params.id },
-    include: {
-      project: {
+  const [program, canEditStaff, canManageParticipants, canViewFeedbacks] =
+    await Promise.all([
+      prisma.program.findUnique({
+        where: { id: params.programId, projectId: params.id },
         select: {
+          id: true,
           name: true,
-          companyId: true,
-        },
-      },
-      trainings: {
-        orderBy: { orderIndex: "asc" },
-        include: {
-          _count: {
+          orderIndex: true,
+          project: {
             select: {
-              sessions: true,
-              participants: { where: { deletedAt: null } },
+              name: true,
+              companyId: true,
             },
           },
-          sessions: {
-            where: { status: { not: SessionStatus.cancelled } },
-            select: { startDatetime: true, endDatetime: true },
-          },
-          posts: {
-            select: { attachments: { select: { id: true } } },
-          },
-        },
-      },
-      participants: {
-        include: {
-          user: {
+          trainings: {
+            orderBy: { orderIndex: "asc" },
             select: {
               id: true,
-              firstName: true,
-              lastName: true,
-              email: true,
-              trainings: {
-                where: { deletedAt: null, training: { programId: params.programId } },
+              title: true,
+              description: true,
+              orderIndex: true,
+              _count: {
                 select: {
-                  training: { select: { id: true, title: true, orderIndex: true } },
+                  sessions: true,
+                  participants: { where: { deletedAt: null } },
                 },
+              },
+              sessions: {
+                where: { status: { not: SessionStatus.cancelled } },
+                select: { startDatetime: true, endDatetime: true },
+              },
+              posts: {
+                select: { _count: { select: { attachments: true } } },
               },
             },
           },
+          _count: { select: { participants: true } },
         },
-        orderBy: { user: { lastName: "asc" } },
-      },
-    },
-  });
+      }),
+      canManageProjects(user.id, user.permissions),
+      canManageProgramParticipants(user.id, params.id, user.permissions),
+      canViewAllFeedbacks(user.id, params.id, user.permissions),
+    ]);
 
   if (!program) notFound();
 
-  const programFeedbacks = await prisma.feedback.findMany({
-    where: { training: { programId: params.programId } },
-    include: {
-      user: { select: { firstName: true, lastName: true, email: true } },
-      training: { select: { id: true, title: true } },
-    },
-    orderBy: { createdAt: "desc" },
-  });
+  const needsParticipantsData = canManageParticipants || canViewFeedbacks;
 
-  const canEditStaff = await canManageProjects(user.id);
-  const canManageParticipants = await canManageProgramParticipants(user.id, params.id);
-  const canViewFeedbacks = await canViewAllFeedbacks(user.id, params.id);
+  const [participantsRows, programFeedbacks, userTrainingRows] = await Promise.all([
+    needsParticipantsData
+      ? prisma.userProgram.findMany({
+          where: { programId: params.programId },
+          select: {
+            id: true,
+            userId: true,
+            user: {
+              select: {
+                firstName: true,
+                lastName: true,
+                email: true,
+              },
+            },
+          },
+          orderBy: { user: { lastName: "asc" } },
+        })
+      : Promise.resolve([]),
+    canViewFeedbacks
+      ? prisma.feedback.findMany({
+          where: { training: { programId: params.programId } },
+          include: {
+            user: { select: { firstName: true, lastName: true, email: true } },
+            training: { select: { id: true, title: true } },
+          },
+          orderBy: { createdAt: "desc" },
+        })
+      : Promise.resolve([]),
+    needsParticipantsData
+      ? prisma.userTraining.findMany({
+          where: {
+            deletedAt: null,
+            training: { programId: params.programId },
+          },
+          select: {
+            userId: true,
+            training: { select: { id: true, title: true, orderIndex: true } },
+          },
+        })
+      : Promise.resolve([]),
+  ]);
+
+  const trainingsByUserId = new Map<
+    string,
+    { id: string; title: string; orderIndex: number }[]
+  >();
+  for (const row of userTrainingRows) {
+    const list = trainingsByUserId.get(row.userId) ?? [];
+    list.push(row.training);
+    trainingsByUserId.set(row.userId, list);
+  }
 
   const nextOrder =
     program.trainings.length > 0
       ? Math.max(...program.trainings.map((t) => t.orderIndex)) + 1
       : 0;
 
-  const visibleFeedbacks = canViewFeedbacks ? programFeedbacks : [];
-
-  const participants = program.participants.map((p) => ({
+  const participants = participantsRows.map((p) => ({
     id: p.id,
     userId: p.userId,
     user: {
@@ -109,9 +145,9 @@ export default async function ProgramDetailPage({
       lastName: p.user.lastName,
       email: p.user.email,
     },
-    trainings: p.user.trainings
-      .map((t) => t.training)
-      .sort((a, b) => a.orderIndex - b.orderIndex),
+    trainings: (trainingsByUserId.get(p.userId) ?? []).sort(
+      (a, b) => a.orderIndex - b.orderIndex
+    ),
   }));
 
   const trainingCards = program.trainings.map(mapTrainingCardRow);
@@ -156,8 +192,8 @@ export default async function ProgramDetailPage({
           </div>
           <p className="mt-1 text-[14px] text-muted-foreground sm:text-[15px]">
             {program.trainings.length} formation{program.trainings.length !== 1 ? "s" : ""} ·{" "}
-            {program.participants.length} participant
-            {program.participants.length !== 1 ? "s" : ""}
+            {program._count.participants} participant
+            {program._count.participants !== 1 ? "s" : ""}
           </p>
         </div>
       </div>
@@ -170,7 +206,7 @@ export default async function ProgramDetailPage({
         trainings={trainingCards}
         participants={participants}
         nextOrder={nextOrder}
-        allFeedbacks={visibleFeedbacks.map((f) => ({
+        allFeedbacks={programFeedbacks.map((f) => ({
           id: f.id,
           rating: f.rating,
           comment: f.comment,

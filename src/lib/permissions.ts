@@ -1,20 +1,23 @@
+import { cache } from "react";
 import { AttendanceStatus, GlobalRole, ProjectRole, UserType } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { isUserAssignedToTraining } from "@/lib/user-training";
 
-export async function getUserPermissions(userId: string) {
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    select: { type: true },
-  });
+export type UserPermissions = {
+  isInternal: boolean;
+  isAdmin: boolean;
+  isPlanner: boolean;
+  isTrainer: boolean;
+  projectRoles: { projectId: string; role: ProjectRole }[];
+};
 
-  const [globalRoles, projectRoles] = await Promise.all([
-    prisma.userGlobalRole.findMany({ where: { userId } }),
-    prisma.userProjectRole.findMany({ where: { userId } }),
-  ]);
-
+export function buildUserPermissions(
+  userType: UserType | null | undefined,
+  globalRoles: { role: GlobalRole }[],
+  projectRoles: { projectId: string; role: ProjectRole }[]
+): UserPermissions {
   return {
-    isInternal: user?.type === UserType.internal,
+    isInternal: userType === UserType.internal,
     isAdmin: globalRoles.some((r) => r.role === GlobalRole.ADMIN),
     isPlanner: globalRoles.some((r) => r.role === GlobalRole.PLANNER),
     isTrainer: globalRoles.some((r) => r.role === GlobalRole.TRAINER),
@@ -25,34 +28,58 @@ export async function getUserPermissions(userId: string) {
   };
 }
 
-export function isStaff(perms: Awaited<ReturnType<typeof getUserPermissions>>) {
+export const getUserPermissions = cache(async (userId: string): Promise<UserPermissions> => {
+  const { getCurrentUser } = await import("@/lib/auth/get-current-user");
+  const current = await getCurrentUser();
+  if (current?.id === userId) {
+    return current.permissions;
+  }
+
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { type: true },
+  });
+
+  const [globalRoles, projectRoles] = await Promise.all([
+    prisma.userGlobalRole.findMany({ where: { userId } }),
+    prisma.userProjectRole.findMany({ where: { userId } }),
+  ]);
+
+  return buildUserPermissions(user?.type, globalRoles, projectRoles);
+});
+
+export function isStaff(perms: UserPermissions) {
   return perms.isAdmin || perms.isPlanner;
 }
 
-export async function canManageUsers(userId: string) {
-  const perms = await getUserPermissions(userId);
-  return perms.isAdmin;
+export async function canManageUsers(userId: string, perms?: UserPermissions) {
+  const p = perms ?? (await getUserPermissions(userId));
+  return p.isAdmin;
 }
 
-export async function canManageProjects(userId: string) {
-  const perms = await getUserPermissions(userId);
-  return isStaff(perms);
+export async function canManageProjects(userId: string, perms?: UserPermissions) {
+  const p = perms ?? (await getUserPermissions(userId));
+  return isStaff(p);
 }
 
-export async function canAccessProject(userId: string, projectId: string) {
-  const perms = await getUserPermissions(userId);
+export async function canAccessProject(
+  userId: string,
+  projectId: string,
+  perms?: UserPermissions
+) {
+  const p = perms ?? (await getUserPermissions(userId));
 
   const project = await prisma.project.findUnique({
     where: { id: projectId },
     select: { deletedAt: true, companyId: true },
   });
   if (!project) return false;
-  if (project.deletedAt && !(await canManageProjects(userId))) return false;
+  if (project.deletedAt && !(await canManageProjects(userId, p))) return false;
 
-  if (perms.isInternal) return true;
-  if (isStaff(perms)) return true;
+  if (p.isInternal) return true;
+  if (isStaff(p)) return true;
 
-  if (perms.projectRoles.some((r) => r.projectId === projectId)) {
+  if (p.projectRoles.some((r) => r.projectId === projectId)) {
     const { ensureCoordinatorProjectAccess } = await import("@/lib/coordinator-company");
     const ok = await ensureCoordinatorProjectAccess(userId, projectId);
     if (ok) return true;
@@ -67,7 +94,7 @@ export async function canAccessProject(userId: string, projectId: string) {
 
 export function projectListFilter(
   userId: string,
-  perms: Awaited<ReturnType<typeof getUserPermissions>>,
+  perms: UserPermissions,
   options?: { deletedOnly?: boolean }
 ) {
   let accessFilter: Record<string, unknown> = {};
@@ -89,9 +116,13 @@ export function projectListFilter(
   return { ...accessFilter, deletedAt: null };
 }
 
-export async function isProjectCoordinator(userId: string, projectId: string) {
-  const perms = await getUserPermissions(userId);
-  const hasRole = perms.projectRoles.some(
+export async function isProjectCoordinator(
+  userId: string,
+  projectId: string,
+  perms?: UserPermissions
+) {
+  const p = perms ?? (await getUserPermissions(userId));
+  const hasRole = p.projectRoles.some(
     (r) => r.projectId === projectId && r.role === ProjectRole.COORDINATOR
   );
   if (!hasRole) return false;
@@ -100,13 +131,17 @@ export async function isProjectCoordinator(userId: string, projectId: string) {
   return ensureCoordinatorProjectAccess(userId, projectId);
 }
 
-export async function canManageProjectRoles(userId: string) {
-  return canManageProjects(userId);
+export async function canManageProjectRoles(userId: string, perms?: UserPermissions) {
+  return canManageProjects(userId, perms);
 }
 
-export async function canManageTrainingSessions(userId: string, projectId: string) {
-  const perms = await getUserPermissions(userId);
-  if (perms.isAdmin || perms.isPlanner) return true;
+export async function canManageTrainingSessions(
+  userId: string,
+  projectId: string,
+  perms?: UserPermissions
+) {
+  const p = perms ?? (await getUserPermissions(userId));
+  if (p.isAdmin || p.isPlanner) return true;
 
   const coordinator = await prisma.userProjectRole.findFirst({
     where: {
@@ -120,9 +155,13 @@ export async function canManageTrainingSessions(userId: string, projectId: strin
   return !!coordinator;
 }
 
-export async function canManageProgramParticipants(userId: string, projectId: string) {
-  if (await canManageProjects(userId)) return true;
-  if (!(await isProjectCoordinator(userId, projectId))) return false;
+export async function canManageProgramParticipants(
+  userId: string,
+  projectId: string,
+  perms?: UserPermissions
+) {
+  if (await canManageProjects(userId, perms)) return true;
+  if (!(await isProjectCoordinator(userId, projectId, perms))) return false;
 
   const coordinatorRole = await prisma.userProjectRole.findFirst({
     where: {
@@ -158,10 +197,14 @@ export async function canUnlockCertificate(userId: string, projectId: string) {
   return canManualUnlockCertificate(userId, projectId);
 }
 
-export async function canManualUnlockCertificate(userId: string, projectId: string) {
-  const perms = await getUserPermissions(userId);
-  if (perms.isAdmin || perms.isPlanner) return true;
-  if (!(await isProjectCoordinator(userId, projectId))) return false;
+export async function canManualUnlockCertificate(
+  userId: string,
+  projectId: string,
+  perms?: UserPermissions
+) {
+  const p = perms ?? (await getUserPermissions(userId));
+  if (p.isAdmin || p.isPlanner) return true;
+  if (!(await isProjectCoordinator(userId, projectId, p))) return false;
 
   const coordinator = await prisma.userProjectRole.findFirst({
     where: {
@@ -183,19 +226,27 @@ export async function isProgramParticipant(userId: string, programId: string) {
   return !!row;
 }
 
-export async function canAccessProgram(userId: string, programId: string) {
+export async function canAccessProgram(
+  userId: string,
+  programId: string,
+  perms?: UserPermissions
+) {
   const program = await prisma.program.findUnique({
     where: { id: programId },
     select: { projectId: true },
   });
   if (!program) return false;
-  if (await canAccessProject(userId, program.projectId)) return true;
+  if (await canAccessProject(userId, program.projectId, perms)) return true;
   return isProgramParticipant(userId, programId);
 }
 
-export async function canViewAllFeedbacks(userId: string, projectId: string) {
-  if (await canManageProjects(userId)) return true;
-  return isProjectCoordinator(userId, projectId);
+export async function canViewAllFeedbacks(
+  userId: string,
+  projectId: string,
+  perms?: UserPermissions
+) {
+  if (await canManageProjects(userId, perms)) return true;
+  return isProjectCoordinator(userId, projectId, perms);
 }
 
 export async function canSubmitFeedback(userId: string, programId: string) {
@@ -236,11 +287,11 @@ export async function canDownloadCertificate(
   return isUserAssignedToTraining(userId, trainingId);
 }
 
-export async function isParticipantOnly(userId: string) {
-  const perms = await getUserPermissions(userId);
-  if (perms.isInternal || isStaff(perms) || perms.isTrainer) return false;
+export async function isParticipantOnly(userId: string, perms?: UserPermissions) {
+  const p = perms ?? (await getUserPermissions(userId));
+  if (p.isInternal || isStaff(p) || p.isTrainer) return false;
   if (
-    perms.projectRoles.some(
+    p.projectRoles.some(
       (r) => r.role === ProjectRole.COORDINATOR || r.role === ProjectRole.TRAINER
     )
   ) {
@@ -253,14 +304,14 @@ export async function isParticipantOnly(userId: string) {
   return !!enrolled;
 }
 
-export async function canAccessTrainingAsParticipant(userId: string, trainingId: string) {
-  const training = await prisma.training.findUnique({
-    where: { id: trainingId },
-    select: { programId: true, program: { select: { projectId: true } } },
-  });
-  if (!training) return false;
-  if (await canAccessProject(userId, training.program.projectId)) {
-    if (await isParticipantOnly(userId)) {
+export async function canAccessTrainingWithProject(
+  userId: string,
+  trainingId: string,
+  projectId: string,
+  perms?: UserPermissions
+) {
+  if (await canAccessProject(userId, projectId, perms)) {
+    if (await isParticipantOnly(userId, perms)) {
       return isUserAssignedToTraining(userId, trainingId);
     }
     return true;
@@ -268,14 +319,55 @@ export async function canAccessTrainingAsParticipant(userId: string, trainingId:
   return false;
 }
 
-export async function canAccessPlanning(userId: string) {
-  if (await canManageProjects(userId)) return true;
-  const perms = await getUserPermissions(userId);
-  if (perms.isTrainer) return true;
+export async function canAccessTrainingAsParticipant(
+  userId: string,
+  trainingId: string,
+  perms?: UserPermissions
+) {
+  const training = await prisma.training.findUnique({
+    where: { id: trainingId },
+    select: { programId: true, program: { select: { projectId: true } } },
+  });
+  if (!training) return false;
+  return canAccessTrainingWithProject(
+    userId,
+    trainingId,
+    training.program.projectId,
+    perms
+  );
+}
+
+export async function canAccessPlanning(userId: string, perms?: UserPermissions) {
+  const p = perms ?? (await getUserPermissions(userId));
+  const fast = resolvePlanningAccessFast(p);
+  if (fast !== null) return fast;
+  return resolvePlanningAccess(userId, p);
+}
+
+/** Résultat immédiat pour staff/formateurs ; `null` = vérification session requise. */
+export function resolvePlanningAccessFast(perms: UserPermissions): boolean | null {
+  if (isStaff(perms) || perms.isTrainer) return true;
   if (perms.projectRoles.some((r) => r.role === ProjectRole.TRAINER)) return true;
+  return null;
+}
+
+export async function resolvePlanningAccess(userId: string, perms: UserPermissions) {
   const assigned = await prisma.session.findFirst({
     where: { trainerId: userId },
     select: { id: true },
   });
   return !!assigned;
+}
+
+/** Résultat immédiat si le rôle exclut participant-only ; `null` = requête BDD requise. */
+export function resolveParticipantOnlyFast(perms: UserPermissions): boolean | null {
+  if (perms.isInternal || isStaff(perms) || perms.isTrainer) return false;
+  if (
+    perms.projectRoles.some(
+      (r) => r.role === ProjectRole.COORDINATOR || r.role === ProjectRole.TRAINER
+    )
+  ) {
+    return false;
+  }
+  return null;
 }

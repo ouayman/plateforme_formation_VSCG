@@ -18,10 +18,35 @@ import {
 } from "@/components/features/planning/trainer-planning-context";
 import { ParticipantPlanningView } from "@/components/features/participant/participant-planning-view";
 
+const sessionListSelect = {
+  location: { select: { name: true } },
+  training: {
+    select: {
+      id: true,
+      title: true,
+      program: {
+        select: {
+          name: true,
+          project: {
+            select: {
+              id: true,
+              name: true,
+              company: { select: { name: true } },
+            },
+          },
+        },
+      },
+    },
+  },
+} as const;
+
 export default async function PlanningPage() {
   const user = await requireAuth();
+  const perms = user.permissions;
 
-  if (await isParticipantOnly(user.id)) {
+  const participantOnly = await isParticipantOnly(user.id, perms);
+
+  if (participantOnly) {
     const activeCompanyId = await getActiveCompanyId(user.id);
     const trainings = await getParticipantTrainings(user.id, activeCompanyId);
     const { calendarSessions, upcomingSessions } = mapParticipantUiData(trainings);
@@ -35,22 +60,12 @@ export default async function PlanningPage() {
     );
   }
 
-  const perms = user.permissions;
   const isStaffUser = isStaff(perms);
-
-  if (!perms.isTrainer && !isStaffUser) {
-    const trainerProjectIds = perms.projectRoles
-      .filter((r) => r.role === ProjectRole.TRAINER)
-      .map((r) => r.projectId);
-
-    if (trainerProjectIds.length === 0) {
-      const assigned = await prisma.session.findFirst({
-        where: { trainerId: user.id },
-        select: { id: true },
-      });
-      if (!assigned) redirect("/dashboard");
-    }
-  }
+  const hasTrainerProjectRole = perms.projectRoles.some(
+    (r) => r.role === ProjectRole.TRAINER
+  );
+  const needsTrainerAccessCheck =
+    !perms.isTrainer && !isStaffUser && !hasTrainerProjectRole;
 
   const sessionFilter = perms.isTrainer
     ? {
@@ -67,30 +82,15 @@ export default async function PlanningPage() {
           ],
         };
 
-  const [sessions, unavailabilities] = await Promise.all([
+  const [sessions, unavailabilities, trainerAccess] = await Promise.all([
     prisma.session.findMany({
       where: sessionFilter,
       orderBy: { startDatetime: "asc" },
-      include: {
-        location: { select: { name: true } },
-        training: {
-          select: {
-            id: true,
-            title: true,
-            program: {
-              select: {
-                name: true,
-                project: {
-                  select: {
-                    id: true,
-                    name: true,
-                    company: { select: { name: true } },
-                  },
-                },
-              },
-            },
-          },
-        },
+      select: {
+        id: true,
+        startDatetime: true,
+        endDatetime: true,
+        ...sessionListSelect,
       },
     }),
     perms.isTrainer
@@ -99,7 +99,17 @@ export default async function PlanningPage() {
           orderBy: { startDatetime: "asc" },
         })
       : Promise.resolve([]),
+    needsTrainerAccessCheck
+      ? prisma.session.findFirst({
+          where: { trainerId: user.id },
+          select: { id: true },
+        })
+      : Promise.resolve(null),
   ]);
+
+  if (needsTrainerAccessCheck && !trainerAccess) {
+    redirect("/dashboard");
+  }
 
   const calendarSessions = sessions.map((session) => ({
     id: session.id,

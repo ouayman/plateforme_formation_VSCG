@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { usePathRefresh } from "@/hooks/use-path-refresh";
 import { ChevronRight, GripVertical } from "lucide-react";
 import { TrainingEditButton } from "@/components/features/programs/training-form-modal";
 import { TrainingCardTags } from "@/components/features/programs/training-card-tags";
@@ -42,7 +42,7 @@ function DropIndicator({ active }: { active: boolean }) {
 }
 
 export function TrainingCards({ programId, trainings, canEdit }: TrainingCardsProps) {
-  const router = useRouter();
+  const { refreshCurrentPath } = usePathRefresh();
   const [items, setItems] = useState(trainings);
   const [dragId, setDragId] = useState<string | null>(null);
   const [dropIndex, setDropIndex] = useState<number | null>(null);
@@ -60,7 +60,7 @@ export function TrainingCards({ programId, trainings, canEdit }: TrainingCardsPr
       body: JSON.stringify({ trainingIds: nextItems.map((t) => t.id) }),
     });
     setSaving(false);
-    router.refresh();
+    refreshCurrentPath();
   }
 
   function reorderAt(fromId: string, targetIndex: number) {

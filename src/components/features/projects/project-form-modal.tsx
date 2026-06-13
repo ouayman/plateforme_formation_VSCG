@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { usePathRefresh } from "@/hooks/use-path-refresh";
 import { Info, Pencil, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -41,6 +42,7 @@ export function ProjectFormModal({
   trigger,
 }: ProjectFormModalProps) {
   const router = useRouter();
+  const { refreshCurrentPath } = usePathRefresh();
   const isEdit = !!project;
   const isDeleted = !!project?.deletedAt;
   const [open, setOpen] = useState(false);
@@ -94,7 +96,7 @@ export function ProjectFormModal({
     }
 
     setOpen(false);
-    router.refresh();
+    refreshCurrentPath();
     if (!isEdit) {
       const data = await res.json();
       router.push(`/projects/${data.id}`);
@@ -124,7 +126,7 @@ export function ProjectFormModal({
 
     setOpen(false);
     router.push("/projects");
-    router.refresh();
+    refreshCurrentPath();
   }
 
   return (

@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { usePathRefresh } from "@/hooks/use-path-refresh";
 import { FlaskConical } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SelectField } from "@/components/ui/select-field";
@@ -60,6 +61,7 @@ type DemoUserSwitcherProps = {
 
 export function DemoUserSwitcher({ variant = "topbar" }: DemoUserSwitcherProps) {
   const router = useRouter();
+  const { refreshCurrentPath } = usePathRefresh();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [users, setUsers] = useState<DemoUser[]>([]);
@@ -121,7 +123,7 @@ export function DemoUserSwitcher({ variant = "topbar" }: DemoUserSwitcherProps) 
 
     setOpen(false);
     router.push("/dashboard");
-    router.refresh();
+    refreshCurrentPath();
   }
 
   return (

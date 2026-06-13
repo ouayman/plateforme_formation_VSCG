@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useSoftRefresh } from "@/hooks/use-soft-refresh";
 import { MessageSquareHeart, Star } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { FeedSidebarSection } from "@/components/features/training-feed/feed-sidebar-section";
@@ -19,7 +19,7 @@ export function FeedFeedbackPanel({
   canSubmit = true,
   embedded = false,
 }: FeedFeedbackPanelProps) {
-  const router = useRouter();
+  const { refresh } = useSoftRefresh();
   const [rating, setRating] = useState(myFeedback?.rating ?? 0);
   const [comment, setComment] = useState(myFeedback?.comment ?? "");
   const [loading, setLoading] = useState(false);
@@ -38,7 +38,7 @@ export function FeedFeedbackPanel({
     setLoading(false);
     if (!res.ok) return;
     setSaved(true);
-    router.refresh();
+    refresh(`/trainings/${trainingId}`);
   }
 
   const form = (

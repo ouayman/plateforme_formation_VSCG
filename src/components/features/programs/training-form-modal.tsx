@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { usePathRefresh } from "@/hooks/use-path-refresh";
 import { Pencil, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -36,6 +37,7 @@ export function TrainingFormModal({
   nextOrderIndex = 0,
 }: TrainingFormModalProps) {
   const router = useRouter();
+  const { refreshCurrentPath } = usePathRefresh();
   const isEdit = !!training;
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -88,7 +90,7 @@ export function TrainingFormModal({
       const data = await res.json();
       router.push(`/trainings/${data.id}`);
     }
-    router.refresh();
+    refreshCurrentPath();
   }
 
   return (

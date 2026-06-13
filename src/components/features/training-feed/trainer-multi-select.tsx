@@ -6,7 +6,7 @@ import { Check, ChevronDown, Info, Search, X } from "lucide-react";
 import {
   conflictLabel,
   type TrainerConflictInfo,
-} from "@/lib/session-conflicts";
+} from "@/lib/session-conflicts-types";
 import { formatDate, formatTime } from "@/lib/format";
 import { cn } from "@/lib/utils";
 

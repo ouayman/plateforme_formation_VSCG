@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { usePathRefresh } from "@/hooks/use-path-refresh";
 import { Pencil, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -34,7 +34,7 @@ export function CompanyFormModal({
   mode = "create",
   trigger,
 }: CompanyFormModalProps) {
-  const router = useRouter();
+  const { refreshCurrentPath } = usePathRefresh();
   const isEdit = mode === "edit" && !!company;
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -72,12 +72,12 @@ export function CompanyFormModal({
     if (!isEdit) {
       const created = await res.json();
       setCompanyId(created.id);
-      router.refresh();
+      refreshCurrentPath();
       return;
     }
 
     setOpen(false);
-    router.refresh();
+    refreshCurrentPath();
   }
 
   const uploadCompanyId = isEdit ? company!.id : companyId;
@@ -118,7 +118,7 @@ export function CompanyFormModal({
               uploadUrl={`/api/companies/${uploadCompanyId}/logo`}
               onUploaded={(path) => {
                 setLogoUrl(path);
-                router.refresh();
+                refreshCurrentPath();
               }}
             />
           ) : (

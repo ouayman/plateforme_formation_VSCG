@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { usePathRefresh } from "@/hooks/use-path-refresh";
 import { Pencil, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -34,7 +34,7 @@ export function SignatoryFormModal({
   signatory,
   trigger,
 }: SignatoryFormModalProps) {
-  const router = useRouter();
+  const { refreshCurrentPath } = usePathRefresh();
   const isEdit = !!signatory;
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -82,7 +82,7 @@ export function SignatoryFormModal({
 
     setOpen(false);
     if (!isEdit) setForm({ name: "", title: "", signatureImageUrl: "" });
-    router.refresh();
+    refreshCurrentPath();
   }
 
   return (

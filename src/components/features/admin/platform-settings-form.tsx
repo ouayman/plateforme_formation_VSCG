@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { usePathRefresh } from "@/hooks/use-path-refresh";
 import { Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,7 +19,7 @@ type PlatformSettingsFormProps = {
 };
 
 export function PlatformSettingsForm({ initial }: PlatformSettingsFormProps) {
-  const router = useRouter();
+  const { refreshCurrentPath } = usePathRefresh();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [form, setForm] = useState(initial);
@@ -42,7 +42,7 @@ export function PlatformSettingsForm({ initial }: PlatformSettingsFormProps) {
       return;
     }
 
-    router.refresh();
+    refreshCurrentPath();
   }
 
   return (
@@ -106,7 +106,7 @@ export function PlatformSettingsForm({ initial }: PlatformSettingsFormProps) {
           uploadUrl="/api/admin/settings/upload?kind=dark"
           onUploaded={(path) => {
             setForm((prev) => ({ ...prev, logoDarkUrl: path }));
-            router.refresh();
+            refreshCurrentPath();
           }}
         />
 
@@ -120,7 +120,7 @@ export function PlatformSettingsForm({ initial }: PlatformSettingsFormProps) {
           uploadUrl="/api/admin/settings/upload?kind=light"
           onUploaded={(path) => {
             setForm((prev) => ({ ...prev, logoLightUrl: path }));
-            router.refresh();
+            refreshCurrentPath();
           }}
         />
       </div>

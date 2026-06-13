@@ -38,9 +38,9 @@ export function trainingLifecycleLabel(status: TrainingLifecycleStatus) {
 }
 
 export function countFeedDocuments(
-  posts: { attachments: { id: string }[] }[]
+  posts: { _count: { attachments: number } }[]
 ) {
-  return posts.reduce((sum, post) => sum + post.attachments.length, 0);
+  return posts.reduce((sum, post) => sum + post._count.attachments, 0);
 }
 
 export function formatTrainingCount(count: number) {
@@ -54,7 +54,7 @@ export function mapTrainingCardRow(training: {
   orderIndex: number;
   _count: { sessions: number; participants: number };
   sessions: { startDatetime: Date | string; endDatetime: Date | string }[];
-  posts: { attachments: { id: string }[] }[];
+  posts: { _count: { attachments: number } }[];
 }) {
   return {
     id: training.id,

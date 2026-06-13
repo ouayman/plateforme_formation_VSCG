@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import { Paperclip, SendHorizontal, X } from "lucide-react";
-import { useRouter } from "next/navigation";
 import { FeedRichEditor } from "@/components/features/training-feed/feed-rich-editor";
+import { useTrainingFeed } from "@/components/features/training-feed/training-feed-context";
+import type { FeedPost } from "@/components/features/training-feed/feed-post-card";
 import { cn } from "@/lib/utils";
 import { UserAvatar } from "@/components/ui/user-avatar";
 import { plainTextFromHtml } from "@/lib/feed-text-utils";
@@ -16,7 +17,7 @@ type FeedComposerProps = {
 };
 
 export function FeedComposer({ trainingId, user, embedded = false }: FeedComposerProps) {
-  const router = useRouter();
+  const { prependPost } = useTrainingFeed();
   const [expanded, setExpanded] = useState(false);
   const [text, setText] = useState("");
   const [files, setFiles] = useState<File[]>([]);
@@ -55,12 +56,14 @@ export function FeedComposer({ trainingId, user, embedded = false }: FeedCompose
     setLoading(false);
     if (!res.ok) return;
 
+    const created = (await res.json()) as FeedPost;
+    prependPost(created);
+
     setText("");
     setFiles([]);
     setLinkPreview(null);
     setDetectedUrl(null);
     setExpanded(false);
-    router.refresh();
   }
 
   return (

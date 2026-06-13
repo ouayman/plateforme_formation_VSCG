@@ -17,3 +17,12 @@ npm run db:migrate
 ```bash
 npm run db:migrate:deploy
 ```
+
+Le build Vercel (`vercel-build`) exécute `prisma migrate deploy` automatiquement.
+
+## Index perf (20250613000000_perf_indexes)
+
+- `sessions(training_id, status)` — listes sessions formation
+- `sessions(trainer_id, start_datetime)` — planning formateur
+- `feedbacks(training_id, created_at DESC)` — avis par formation
+- `session_trainers(user_id)` — sessions multi-formateurs

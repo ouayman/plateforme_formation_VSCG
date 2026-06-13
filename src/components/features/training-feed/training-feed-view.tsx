@@ -1,9 +1,9 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { Search, SearchX } from "lucide-react";
 import { FeedComposer } from "@/components/features/training-feed/feed-composer";
-import { FeedPostCard, type FeedPost } from "@/components/features/training-feed/feed-post-card";
+import { FeedPostCard } from "@/components/features/training-feed/feed-post-card";
 import { FeedSidebar } from "@/components/features/training-feed/feed-sidebar";
 import { FeedMobileDocuments } from "@/components/features/training-feed/feed-mobile-documents";
 import { FeedFeedbackPanel } from "@/components/features/training-feed/feed-feedback-panel";
@@ -12,14 +12,16 @@ import { FeedCertificatePanel } from "@/components/features/training-feed/feed-c
 import { FeedTrainingParticipantsSection } from "@/components/features/training-feed/feed-training-participants-section";
 import { FeedSessionsPanel, type FeedSessionRow } from "@/components/features/training-feed/feed-sessions-panel";
 import { FeedBannerProgress } from "@/components/features/training-feed/feed-banner-progress";
+import { useTrainingFeed } from "@/components/features/training-feed/training-feed-context";
 import { cn } from "@/lib/utils";
+import type { FeedPost } from "@/components/features/training-feed/feed-post-card";
 
 type TrainingFeedViewProps = {
   trainingId: string;
   programId: string;
   title: string;
   programName: string;
-  posts: FeedPost[];
+  postsSlot: ReactNode;
   canPublish: boolean;
   canModerate: boolean;
   isAdmin: boolean;
@@ -30,18 +32,6 @@ type TrainingFeedViewProps = {
   certificateStatus: "locked" | "unlocked" | null;
   canManageCertificates: boolean;
   canManageParticipants: boolean;
-  certificates: {
-    userId: string;
-    status: "locked" | "unlocked";
-    attendancePercent: number | null;
-    user: { firstName: string; lastName: string; email: string };
-  }[];
-  availableParticipants: {
-    id: string;
-    firstName: string;
-    lastName: string;
-    email: string;
-  }[];
   sessions: FeedSessionRow[];
   showSessionAttendance: boolean;
   showFeedbackPanel: boolean;
@@ -80,7 +70,7 @@ export function TrainingFeedView({
   trainingId,
   title,
   programName,
-  posts,
+  postsSlot,
   canPublish,
   canModerate,
   isAdmin,
@@ -91,8 +81,6 @@ export function TrainingFeedView({
   certificateStatus,
   canManageCertificates,
   canManageParticipants,
-  certificates,
-  availableParticipants,
   sessions,
   showSessionAttendance,
   showFeedbackPanel,
@@ -105,6 +93,7 @@ export function TrainingFeedView({
   progress,
   user,
 }: TrainingFeedViewProps) {
+  const { posts, postsReady, certificates, availableParticipants } = useTrainingFeed();
   const [search, setSearch] = useState("");
 
   const filtered = useMemo(() => {
@@ -152,7 +141,9 @@ export function TrainingFeedView({
               <FeedComposer trainingId={trainingId} user={user} embedded />
             )}
 
-            {filtered.length === 0 ? (
+            {!postsReady && postsSlot}
+
+            {postsReady && filtered.length === 0 ? (
               <div className="flex flex-col items-center px-5 py-16 text-center">
                 {search ? (
                   <>
@@ -167,7 +158,7 @@ export function TrainingFeedView({
                   </p>
                 )}
               </div>
-            ) : (
+            ) : postsReady ? (
               <div>
                 {filtered.map((post, index) => (
                   <FeedPostCard
@@ -183,7 +174,7 @@ export function TrainingFeedView({
                   />
                 ))}
               </div>
-            )}
+            ) : null}
           </div>
 
           <FeedSidebar
@@ -237,8 +228,6 @@ export function TrainingFeedView({
           {canManageCertificates && (
             <FeedTrainingParticipantsSection
               trainingId={trainingId}
-              certificates={certificates}
-              availableParticipants={availableParticipants}
               canManage={canManageParticipants}
               collapsible={showFeedbackList}
             />

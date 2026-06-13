@@ -1,7 +1,6 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
 import {
   Award,
   Download,
@@ -16,6 +15,7 @@ import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { DropdownPortal, useDropdownAnchor } from "@/components/ui/dropdown-portal";
 import { FeedSidebarSection } from "@/components/features/training-feed/feed-sidebar-section";
+import { useTrainingFeed } from "@/components/features/training-feed/training-feed-context";
 
 export type CertificateRow = {
   userId: string;
@@ -26,7 +26,6 @@ export type CertificateRow = {
 
 type FeedParticipantsAdminPanelProps = {
   trainingId: string;
-  certificates: CertificateRow[];
   collapsible?: boolean;
   onUnassign?: (userId: string) => void;
   unassignPending?: string | null;
@@ -60,12 +59,15 @@ function MenuItem({
 
 export function FeedParticipantsAdminPanel({
   trainingId,
-  certificates,
   collapsible = false,
   onUnassign,
   unassignPending,
 }: FeedParticipantsAdminPanelProps) {
-  const router = useRouter();
+  const {
+    certificates,
+    updateCertificateStatus,
+    updateAllCertificateStatus,
+  } = useTrainingFeed();
   const { anchorRef, setAnchor } = useDropdownAnchor();
   const [search, setSearch] = useState("");
   const [pending, setPending] = useState<string | null>(null);
@@ -115,28 +117,47 @@ export function FeedParticipantsAdminPanel({
 
   async function setCertificateStatus(userId: string, status: "locked" | "unlocked") {
     setPending(userId);
-    await fetch(`/api/trainings/${trainingId}/certificates/${userId}`, {
+    updateCertificateStatus(userId, status);
+
+    const res = await fetch(`/api/trainings/${trainingId}/certificates/${userId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ status }),
     });
+
     setPending(null);
     closeMenu();
-    router.refresh();
+
+    if (!res.ok) {
+      updateCertificateStatus(userId, status === "locked" ? "unlocked" : "locked");
+    }
   }
 
   async function setAllStatus(status: "locked" | "unlocked", targets: CertificateRow[]) {
+    const userIds = targets.map((cert) => cert.userId);
+    const previous = new Map(
+      targets.map((cert) => [cert.userId, cert.status] as const)
+    );
+
     setBulkLoading(true);
+    updateAllCertificateStatus(userIds, status);
+
     for (const cert of targets) {
-      await fetch(`/api/trainings/${trainingId}/certificates/${cert.userId}`, {
+      const res = await fetch(`/api/trainings/${trainingId}/certificates/${cert.userId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status }),
       });
+      if (!res.ok) {
+        updateCertificateStatus(
+          cert.userId,
+          previous.get(cert.userId) ?? (status === "locked" ? "unlocked" : "locked")
+        );
+      }
     }
+
     setBulkLoading(false);
     closeMenu();
-    router.refresh();
   }
 
   const activeCert =

@@ -76,7 +76,7 @@ export default async function SessionDetailPage({
   if (!session) notFound();
 
   const projectId = session.training.program.projectId;
-  const allowed = await canAccessProject(user.id, projectId);
+  const allowed = await canAccessProject(user.id, projectId, user.permissions);
   if (!allowed) redirect("/projects");
 
   const canEdit = await canManageAttendance(user.id, session.id);

@@ -17,13 +17,13 @@ export default async function ProjectDetailPage({
   params: { id: string };
 }) {
   const user = await requireAuth();
-  if (await isParticipantOnly(user.id)) {
+  if (await isParticipantOnly(user.id, user.permissions)) {
     redirect(participantRoutes.trainings);
   }
-  const allowed = await canAccessProject(user.id, params.id);
+  const allowed = await canAccessProject(user.id, params.id, user.permissions);
   if (!allowed) redirect("/projects");
 
-  const canEdit = await canManageProjects(user.id);
+  const canEdit = await canManageProjects(user.id, user.permissions);
 
   const project = await prisma.project.findUnique({
     where: { id: params.id },

@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
+import { useSoftRefresh } from "@/hooks/use-soft-refresh";
 import { FilePenLine } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -19,7 +20,8 @@ type ReportEditorProps = {
 };
 
 export function ReportEditor({ sessionId, canEdit, report }: ReportEditorProps) {
-  const router = useRouter();
+  const pathname = usePathname();
+  const { refresh } = useSoftRefresh();
   const [content, setContent] = useState(report?.content ?? "");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -43,7 +45,7 @@ export function ReportEditor({ sessionId, canEdit, report }: ReportEditorProps) 
       return;
     }
 
-    router.refresh();
+    refresh(pathname);
   }
 
   if (!canEdit && !report) {

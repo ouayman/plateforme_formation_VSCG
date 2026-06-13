@@ -1,8 +1,9 @@
+import { cache } from "react";
 import { getSession } from "@/lib/auth/session";
+import { buildUserPermissions } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
-import { getUserPermissions } from "@/lib/permissions";
 
-export async function getCurrentUser() {
+export const getCurrentUser = cache(async () => {
   const session = await getSession();
   if (!session) return null;
 
@@ -16,7 +17,11 @@ export async function getCurrentUser() {
 
   if (!user) return null;
 
-  const permissions = await getUserPermissions(user.id);
+  const projectRoles = await prisma.userProjectRole.findMany({
+    where: { userId: user.id },
+  });
+
+  const permissions = buildUserPermissions(user.type, user.globalRoles, projectRoles);
 
   return { ...user, permissions };
-}
+});
