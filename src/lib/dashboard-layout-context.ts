@@ -1,6 +1,6 @@
-import { ProjectRole, UserType } from "@prisma/client";
-import { getActiveCompanyId, getUserCompanyOptions } from "@/lib/active-company";
+import { UserType } from "@prisma/client";
 import type { getCurrentUser } from "@/lib/auth/get-current-user";
+import { getClientCompanyContext, type ClientCompanyUser } from "@/lib/active-company";
 import {
   isParticipantOnly,
   resolveParticipantOnlyFast,
@@ -26,25 +26,27 @@ export async function getDashboardLayoutContext(
   const planningFast = resolvePlanningAccessFast(user.permissions);
   const participantFast = resolveParticipantOnlyFast(user.permissions);
 
-  const [showPlanning, settings, participantOnly, companyOptions, activeCompanyId] =
-    await Promise.all([
-      planningFast !== null
-        ? planningFast
-        : resolvePlanningAccess(user.id, user.permissions),
-      getPlatformSettings(),
-      participantFast !== null
-        ? participantFast
-        : isParticipantOnly(user.id, user.permissions),
-      user.type === UserType.client ? getUserCompanyOptions(user.id) : [],
-      user.type === UserType.client ? getActiveCompanyId(user.id) : null,
-    ]);
+  const clientCompany =
+    user.type === UserType.client
+      ? getClientCompanyContext(user as ClientCompanyUser)
+      : { companyOptions: [] as { id: string; name: string }[], activeCompanyId: null };
+
+  const [showPlanning, settings, participantOnly] = await Promise.all([
+    planningFast !== null
+      ? planningFast
+      : resolvePlanningAccess(user.id, user.permissions),
+    getPlatformSettings(),
+    participantFast !== null
+      ? participantFast
+      : isParticipantOnly(user.id, user.permissions),
+  ]);
 
   return {
     showPlanning,
     participantOnly,
     organizationName: settings.organizationName,
     organizationLogoDarkUrl: settings.logoDarkUrl,
-    companyOptions,
-    activeCompanyId,
+    companyOptions: clientCompany.companyOptions,
+    activeCompanyId: clientCompany.activeCompanyId,
   };
 }

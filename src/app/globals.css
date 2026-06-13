@@ -203,4 +203,13 @@
     animation: feed-expand 0.25s ease-out forwards;
     overflow: hidden;
   }
+
+  @keyframes navigation-progress {
+    0% {
+      transform: translateX(-100%);
+    }
+    100% {
+      transform: translateX(400%);
+    }
+  }
 }

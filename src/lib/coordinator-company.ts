@@ -53,19 +53,4 @@ export async function revokeInvalidCoordinatorRoles(userId: string) {
   return invalidIds.length;
 }
 
-export async function ensureCoordinatorProjectAccess(userId: string, projectId: string) {
-  const role = await prisma.userProjectRole.findFirst({
-    where: { userId, projectId, role: ProjectRole.COORDINATOR },
-    include: { project: { select: { companyId: true } } },
-  });
-  if (!role) return true;
-
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    select: { companyId: true },
-  });
-  if (!user || user.companyId === role.project.companyId) return true;
-
-  await prisma.userProjectRole.delete({ where: { id: role.id } });
-  return false;
-}
+export { ensureCoordinatorProjectAccess } from "@/lib/coordinator-project-role";

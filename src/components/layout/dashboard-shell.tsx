@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { Sidebar } from "@/components/layout/sidebar";
 import { Topbar } from "@/components/layout/topbar";
 import { BreadcrumbProvider } from "@/components/layout/breadcrumb-context";
+import { NavigationProgress } from "@/components/layout/navigation-progress";
 import { participantRoutes } from "@/lib/routes";
 
 type CompanyOption = { id: string; name: string };
@@ -80,6 +81,9 @@ export function DashboardShell({
 
   return (
     <BreadcrumbProvider>
+      <Suspense fallback={null}>
+        <NavigationProgress />
+      </Suspense>
       <div className="flex h-[100dvh] overflow-hidden">
         <div className="hidden shrink-0 lg:flex">
           <Sidebar {...sidebarProps} />

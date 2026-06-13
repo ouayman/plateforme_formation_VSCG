@@ -9,7 +9,7 @@ import { ParticipantFormationsView } from "@/components/features/participant/par
 
 export default async function MyTrainingsPage() {
   const user = await requireAuth();
-  const activeCompanyId = await getActiveCompanyId(user.id);
+  const activeCompanyId = await getActiveCompanyId(user.id, user);
   const trainings = await getParticipantTrainings(user.id, activeCompanyId);
 
   if (trainings.length === 0) {

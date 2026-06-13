@@ -6,6 +6,8 @@
 npx prisma migrate resolve --applied 20250612000000_init
 ```
 
+Variables Neon sur Vercel : `DATABASE_URL` uniquement (URL pooler + `pgbouncer=true` recommandé).
+
 ## Dev — nouvelle migration
 
 ```bash

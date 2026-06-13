@@ -47,7 +47,7 @@ export default async function PlanningPage() {
   const participantOnly = await isParticipantOnly(user.id, perms);
 
   if (participantOnly) {
-    const activeCompanyId = await getActiveCompanyId(user.id);
+    const activeCompanyId = await getActiveCompanyId(user.id, user);
     const trainings = await getParticipantTrainings(user.id, activeCompanyId);
     const { calendarSessions, upcomingSessions } = mapParticipantUiData(trainings);
 

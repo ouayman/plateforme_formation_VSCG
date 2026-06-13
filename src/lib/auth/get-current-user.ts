@@ -9,9 +9,28 @@ export const getCurrentUser = cache(async () => {
 
   const user = await prisma.user.findUnique({
     where: { id: session.userId },
-    include: {
-      company: true,
-      globalRoles: true,
+    select: {
+      id: true,
+      email: true,
+      firstName: true,
+      lastName: true,
+      type: true,
+      companyId: true,
+      avatarUrl: true,
+      company: {
+        select: {
+          id: true,
+          name: true,
+          type: true,
+          logoUrl: true,
+        },
+      },
+      globalRoles: { select: { role: true } },
+      companies: {
+        select: {
+          company: { select: { id: true, name: true, type: true } },
+        },
+      },
     },
   });
 
@@ -19,6 +38,7 @@ export const getCurrentUser = cache(async () => {
 
   const projectRoles = await prisma.userProjectRole.findMany({
     where: { userId: user.id },
+    select: { projectId: true, role: true },
   });
 
   const permissions = buildUserPermissions(user.type, user.globalRoles, projectRoles);

@@ -18,9 +18,8 @@ export async function canPublishTrainingFeed(
   projectId: string,
   perms?: UserPermissions
 ) {
-  if (await canManageProjects(userId, perms)) return true;
-
   const p = perms ?? (await getUserPermissions(userId));
+  if (isStaff(p)) return true;
   if (p.isTrainer) return true;
 
   if (
@@ -31,16 +30,9 @@ export async function canPublishTrainingFeed(
     return true;
   }
 
-  const coordinator = await prisma.userProjectRole.findFirst({
-    where: {
-      userId,
-      projectId,
-      role: ProjectRole.COORDINATOR,
-      canPublishFeed: true,
-    },
-    select: { id: true },
-  });
-  return !!coordinator;
+  const { getCoordinatorProjectRole } = await import("@/lib/coordinator-project-role");
+  const role = await getCoordinatorProjectRole(userId, projectId);
+  return !!role?.canPublishFeed;
 }
 
 export async function canModerateTrainingPost(
