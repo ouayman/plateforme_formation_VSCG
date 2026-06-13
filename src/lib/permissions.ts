@@ -293,7 +293,8 @@ export async function canAccessTrainingWithProject(
   userId: string,
   trainingId: string,
   projectId: string,
-  perms?: UserPermissions
+  perms?: UserPermissions,
+  options?: { isAssigned?: boolean }
 ) {
   const p = perms ?? (await getUserPermissions(userId));
 
@@ -306,6 +307,7 @@ export async function canAccessTrainingWithProject(
         ? participantFast
         : await isParticipantOnly(userId, p);
     if (participantOnly) {
+      if (options?.isAssigned !== undefined) return options.isAssigned;
       return isUserAssignedToTraining(userId, trainingId);
     }
     return true;

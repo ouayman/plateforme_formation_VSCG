@@ -9,24 +9,23 @@ import {
   canManageProgramParticipants,
   canManageTrainingSessions,
   canManualUnlockCertificate,
-  canSubmitTrainingFeedback,
   isParticipantOnly,
   isStaff,
   resolveParticipantOnlyFast,
 } from "@/lib/permissions";
-import { isUserAssignedToTraining } from "@/lib/user-training";
 import { participantRoutes } from "@/lib/routes";
 import { SetBreadcrumb } from "@/components/layout/breadcrumb-context";
 import { TrainingFeedView } from "@/components/features/training-feed/training-feed-view";
 import { TrainingFeedProvider } from "@/components/features/training-feed/training-feed-context";
 import { TrainingFeedPostsLoader } from "@/components/features/training-feed/training-feed-posts-loader";
 import { FeedPostsSkeleton } from "@/components/features/training-feed/feed-posts-skeleton";
-import {
-  canPublishTrainingFeed,
-} from "@/lib/training-feed";
+import { canPublishTrainingFeed } from "@/lib/training-feed";
 
-function trainingInclude(userId: string) {
+function trainingSelect(userId: string) {
   return {
+    id: true,
+    title: true,
+    programId: true,
     program: {
       select: {
         id: true,
@@ -40,6 +39,11 @@ function trainingInclude(userId: string) {
           },
         },
       },
+    },
+    participants: {
+      where: { userId, deletedAt: null },
+      select: { id: true },
+      take: 1,
     },
     sessions: {
       orderBy: { startDatetime: "asc" as const },
@@ -68,6 +72,19 @@ function trainingInclude(userId: string) {
   };
 }
 
+function hasPresentAttendance(
+  sessions: {
+    status: SessionStatus;
+    participants: { attendanceStatus: AttendanceStatus | null }[];
+  }[]
+) {
+  return sessions.some(
+    (session) =>
+      session.status !== SessionStatus.cancelled &&
+      session.participants[0]?.attendanceStatus === AttendanceStatus.present
+  );
+}
+
 export default async function TrainingDetailPage({
   params,
 }: {
@@ -83,17 +100,20 @@ export default async function TrainingDetailPage({
       : isParticipantOnly(user.id, user.permissions),
     prisma.training.findUnique({
       where: { id: params.id },
-      include: trainingInclude(user.id),
+      select: trainingSelect(user.id),
     }),
   ]);
 
   if (!training) notFound();
 
+  const assigned = training.participants.length > 0;
+
   const hasAccess = await canAccessTrainingWithProject(
     user.id,
     params.id,
     training.program.projectId,
-    user.permissions
+    user.permissions,
+    { isAssigned: assigned }
   );
   if (!hasAccess) {
     redirect(participantOnly ? participantRoutes.trainings : "/projects");
@@ -103,13 +123,11 @@ export default async function TrainingDetailPage({
   const staffView = isStaff(user.permissions) || user.permissions.isTrainer;
 
   const [
-    assigned,
     canPublish,
     canManageCertificates,
     canManageParticipants,
     canManageSessions,
   ] = await Promise.all([
-    isUserAssignedToTraining(user.id, params.id),
     canPublishTrainingFeed(user.id, projectId, user.permissions),
     canManualUnlockCertificate(user.id, projectId, user.permissions, user.companyId),
     canManageProgramParticipants(user.id, projectId, user.permissions, user.companyId),
@@ -119,9 +137,10 @@ export default async function TrainingDetailPage({
   const showFeedbackPanel =
     assigned && (participantOnly || !isStaff(user.permissions));
   const canModerate = canPublish || user.permissions.isAdmin;
+  const canSubmitFeedback =
+    showFeedbackPanel && assigned && hasPresentAttendance(training.sessions);
 
   const [
-    canSubmitFeedback,
     feedback,
     allFeedbacks,
     sessionTrainers,
@@ -130,9 +149,6 @@ export default async function TrainingDetailPage({
     sessionsForAttendance,
     programPool,
   ] = await Promise.all([
-    showFeedbackPanel
-      ? canSubmitTrainingFeedback(user.id, params.id)
-      : Promise.resolve(false),
     showFeedbackPanel
       ? prisma.feedback.findUnique({
           where: {
@@ -145,7 +161,11 @@ export default async function TrainingDetailPage({
       ? Promise.resolve([])
       : prisma.feedback.findMany({
           where: { trainingId: params.id },
-          include: {
+          select: {
+            id: true,
+            rating: true,
+            comment: true,
+            createdAt: true,
             user: { select: { firstName: true, lastName: true, email: true } },
           },
           orderBy: { createdAt: "desc" },
@@ -189,7 +209,8 @@ export default async function TrainingDetailPage({
     canManageParticipants
       ? prisma.userProgram.findMany({
           where: { programId: training.programId },
-          include: {
+          select: {
+            userId: true,
             user: { select: { id: true, firstName: true, lastName: true, email: true } },
           },
           orderBy: { user: { lastName: "asc" } },

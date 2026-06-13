@@ -12,6 +12,22 @@ type TrainingFeedPostsLoaderProps = {
   staffView: boolean;
 };
 
+const trainingPostSelect = {
+  id: true,
+  type: true,
+  systemType: true,
+  text: true,
+  linkUrl: true,
+  linkTitle: true,
+  linkDescription: true,
+  linkImageUrl: true,
+  createdAt: true,
+  updatedAt: true,
+  author: postAuthorInclude.author,
+  attachments: postAuthorInclude.attachments,
+  reactions: postAuthorInclude.reactions,
+} as const;
+
 export async function TrainingFeedPostsLoader({
   trainingId,
   userId,
@@ -22,7 +38,7 @@ export async function TrainingFeedPostsLoader({
       trainingId,
       ...trainingPostVisibilityFilter(userId, staffView),
     },
-    include: postAuthorInclude,
+    select: trainingPostSelect,
     orderBy: { createdAt: "desc" },
   });
 
