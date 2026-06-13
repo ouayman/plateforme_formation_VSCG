@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { CompanyType } from "@prisma/client";
+import { invalidateClientCompaniesCache } from "@/lib/cache/client-companies";
 import { requireAdminApi } from "@/lib/auth/require";
 import { prisma } from "@/lib/prisma";
 import { updateCompanySchema } from "@/lib/validations/company";
@@ -55,6 +56,10 @@ export async function PATCH(
     await reevaluateAutoUnlockForCompany(params.id);
   }
 
+  if (company.type === CompanyType.client || updated.type === CompanyType.client) {
+    invalidateClientCompaniesCache();
+  }
+
   return NextResponse.json(updated);
 }
 
@@ -83,5 +88,6 @@ export async function DELETE(
   }
 
   await prisma.company.delete({ where: { id: params.id } });
+  invalidateClientCompaniesCache();
   return NextResponse.json({ ok: true });
 }

@@ -16,9 +16,18 @@ export default async function AdminUsersPage() {
         OR: [{ type: UserType.internal }, { type: UserType.client }],
       },
       orderBy: { createdAt: "desc" },
-      include: {
+      take: 500,
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        avatarUrl: true,
+        companyId: true,
+        type: true,
+        loginCount: true,
         company: { select: { id: true, name: true, type: true, logoUrl: true } },
-        globalRoles: true,
+        globalRoles: { select: { role: true } },
       },
     }),
     prisma.company.findMany({

@@ -1,13 +1,13 @@
 import { UserType } from "@prisma/client";
 import type { getCurrentUser } from "@/lib/auth/get-current-user";
 import { getClientCompanyContext, type ClientCompanyUser } from "@/lib/active-company";
+import { getCachedPlatformSettings } from "@/lib/cache/platform-settings-cache";
 import {
   isParticipantOnly,
   resolveParticipantOnlyFast,
   resolvePlanningAccess,
   resolvePlanningAccessFast,
 } from "@/lib/permissions";
-import { getPlatformSettings } from "@/lib/platform-settings";
 
 type DashboardUser = NonNullable<Awaited<ReturnType<typeof getCurrentUser>>>;
 
@@ -35,7 +35,7 @@ export async function getDashboardLayoutContext(
     planningFast !== null
       ? planningFast
       : resolvePlanningAccess(user.id, user.permissions),
-    getPlatformSettings(),
+    getCachedPlatformSettings(),
     participantFast !== null
       ? participantFast
       : isParticipantOnly(user.id, user.permissions),

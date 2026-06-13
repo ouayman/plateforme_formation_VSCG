@@ -3,6 +3,7 @@ import { cache } from "react";
 import { revalidateTag, unstable_cache } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { BRANDING } from "@/lib/constants";
+import { invalidatePlatformSettingsCache } from "@/lib/cache/platform-settings-cache";
 
 export type PlatformSettingsData = {
   organizationName: string;
@@ -102,6 +103,7 @@ export async function updatePlatformSettings(data: PlatformSettingsData) {
     },
   }).then((result) => {
     revalidateTag("platform-settings");
+    invalidatePlatformSettingsCache();
     return result;
   });
 }

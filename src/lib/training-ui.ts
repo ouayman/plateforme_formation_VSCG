@@ -54,7 +54,8 @@ export function mapTrainingCardRow(training: {
   orderIndex: number;
   _count: { sessions: number; participants: number };
   sessions: { startDatetime: Date | string; endDatetime: Date | string }[];
-  posts: { _count: { attachments: number } }[];
+  posts?: { _count: { attachments: number } }[];
+  documentCount?: number;
 }) {
   return {
     id: training.id,
@@ -63,7 +64,8 @@ export function mapTrainingCardRow(training: {
     orderIndex: training.orderIndex,
     sessionCount: training._count.sessions,
     participantCount: training._count.participants,
-    documentCount: countFeedDocuments(training.posts),
+    documentCount:
+      training.documentCount ?? countFeedDocuments(training.posts ?? []),
     lifecycleStatus: getTrainingLifecycleStatus(training.sessions),
   };
 }

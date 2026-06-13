@@ -1,8 +1,8 @@
 import { redirect } from "next/navigation";
 import { FolderKanban, GraduationCap, Users } from "lucide-react";
 import { requireAuth } from "@/lib/auth/require";
-import { prisma } from "@/lib/prisma";
-import { isParticipantOnly, projectListFilter } from "@/lib/permissions";
+import { loadDashboardStats } from "@/lib/loaders/dashboard";
+import { isParticipantOnly } from "@/lib/permissions";
 import { participantRoutes } from "@/lib/routes";
 import { PageHeader } from "@/components/layout/page-header";
 import { SetBreadcrumb } from "@/components/layout/breadcrumb-context";
@@ -15,20 +15,10 @@ export default async function DashboardPage() {
     redirect(participantRoutes.trainings);
   }
 
-  const projectFilter = projectListFilter(user.id, user.permissions);
-
-  const [projectCount, sessionCount, participantCount] = await Promise.all([
-    prisma.project.count({ where: projectFilter }),
-    prisma.session.count({
-      where: {
-        startDatetime: { gte: new Date() },
-        training: { program: { project: projectFilter } },
-      },
-    }),
-    prisma.userProgram.count({
-      where: { program: { project: projectFilter } },
-    }),
-  ]);
+  const [projectCount, sessionCount, participantCount] = await loadDashboardStats(
+    user.id,
+    user.permissions
+  );
 
   return (
     <div className="space-y-8">

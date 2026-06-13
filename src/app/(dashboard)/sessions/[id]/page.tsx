@@ -2,7 +2,7 @@ import { notFound, redirect } from "next/navigation";
 import { Calendar, ClipboardList, MapPin, User } from "lucide-react";
 import { requireAuth } from "@/lib/auth/require";
 import { prisma } from "@/lib/prisma";
-import { canAccessProject, canManageAttendance } from "@/lib/permissions";
+import { canAccessProjectWithSnapshot, canManageAttendance } from "@/lib/permissions";
 import {
   DISPLAY_STATUS_META,
   findNextConfirmedSessionId,
@@ -37,18 +37,25 @@ export default async function SessionDetailPage({
 
   const session = await prisma.session.findUnique({
     where: { id: params.id },
-    include: {
+    select: {
+      id: true,
+      startDatetime: true,
+      endDatetime: true,
+      status: true,
       trainer: { select: { id: true, firstName: true, lastName: true } },
       location: { select: { name: true, address: true } },
       reports: {
-        include: {
+        select: {
+          content: true,
+          createdAt: true,
           trainer: { select: { firstName: true, lastName: true } },
         },
         orderBy: { createdAt: "desc" },
         take: 1,
       },
       participants: {
-        include: {
+        select: {
+          attendanceStatus: true,
           user: { select: { id: true, firstName: true, lastName: true, email: true } },
         },
         orderBy: { user: { lastName: "asc" } },
@@ -65,7 +72,7 @@ export default async function SessionDetailPage({
               id: true,
               name: true,
               projectId: true,
-              project: { select: { name: true } },
+              project: { select: { name: true, deletedAt: true, companyId: true } },
             },
           },
         },
@@ -76,7 +83,13 @@ export default async function SessionDetailPage({
   if (!session) notFound();
 
   const projectId = session.training.program.projectId;
-  const allowed = await canAccessProject(user.id, projectId, user.permissions);
+  const projectSnapshot = session.training.program.project;
+  const allowed = await canAccessProjectWithSnapshot(
+    user.id,
+    projectId,
+    { deletedAt: projectSnapshot.deletedAt, companyId: projectSnapshot.companyId },
+    user.permissions
+  );
   if (!allowed) redirect("/projects");
 
   const canEdit = await canManageAttendance(user.id, session.id);

@@ -9,12 +9,23 @@ export async function getParticipantTrainings(userId: string, companyId?: string
         ? { training: { program: { project: { companyId } } } }
         : {}),
     },
-    include: {
+    select: {
       training: {
-        include: {
+        select: {
+          id: true,
+          title: true,
+          description: true,
+          programId: true,
           program: {
-            include: {
-              project: { select: { id: true, name: true, company: { select: { name: true } } } },
+            select: {
+              name: true,
+              project: {
+                select: {
+                  id: true,
+                  name: true,
+                  company: { select: { name: true } },
+                },
+              },
             },
           },
           _count: { select: { sessions: true } },

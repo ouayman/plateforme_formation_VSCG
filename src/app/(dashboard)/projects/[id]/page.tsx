@@ -1,9 +1,15 @@
 import { notFound, redirect } from "next/navigation";
-import { CompanyType, ProjectRole, UserType } from "@prisma/client";
 import { Building2, Calendar, FolderKanban, Pencil } from "lucide-react";
 import { requireAuth } from "@/lib/auth/require";
-import { prisma } from "@/lib/prisma";
-import { canAccessProject, canManageProjects, isParticipantOnly } from "@/lib/permissions";
+import {
+  canAccessProjectWithSnapshot,
+  canManageProjects,
+  isParticipantOnly,
+} from "@/lib/permissions";
+import {
+  loadProjectDetail,
+  loadProjectEditorData,
+} from "@/lib/loaders/project-detail";
 import { participantRoutes } from "@/lib/routes";
 import { SetBreadcrumb } from "@/components/layout/breadcrumb-context";
 import { ProjectFormModal } from "@/components/features/projects/project-form-modal";
@@ -17,54 +23,34 @@ export default async function ProjectDetailPage({
   params: { id: string };
 }) {
   const user = await requireAuth();
-  if (await isParticipantOnly(user.id, user.permissions)) {
+
+  const [participantOnly, project, canEdit] = await Promise.all([
+    isParticipantOnly(user.id, user.permissions),
+    loadProjectDetail(params.id),
+    canManageProjects(user.id, user.permissions),
+  ]);
+
+  if (participantOnly) {
     redirect(participantRoutes.trainings);
   }
-  const allowed = await canAccessProject(user.id, params.id, user.permissions);
-  if (!allowed) redirect("/projects");
-
-  const canEdit = await canManageProjects(user.id, user.permissions);
-
-  const project = await prisma.project.findUnique({
-    where: { id: params.id },
-    include: {
-      company: { select: { id: true, name: true } },
-      programs: {
-        orderBy: { orderIndex: "asc" },
-        include: { _count: { select: { trainings: true, participants: true } } },
-      },
-      locations: { orderBy: { name: "asc" } },
-      signatories: { orderBy: { name: "asc" } },
-      projectRoles: {
-        where: { role: ProjectRole.COORDINATOR },
-        include: {
-          user: {
-            select: { id: true, firstName: true, lastName: true, email: true, type: true },
-          },
-        },
-        orderBy: { user: { lastName: "asc" } },
-      },
-    },
-  });
 
   if (!project) notFound();
 
+  const allowed = await canAccessProjectWithSnapshot(
+    user.id,
+    params.id,
+    { deletedAt: project.deletedAt, companyId: project.companyId },
+    user.permissions
+  );
+  if (!allowed) redirect("/projects");
+
   const isDeleted = !!project.deletedAt;
 
-  const [coordinatorUsers, clientCompanies] = canEdit && !isDeleted
-    ? await Promise.all([
-        prisma.user.findMany({
-          where: { type: UserType.client, companyId: project.companyId },
-          select: { id: true, firstName: true, lastName: true, email: true },
-          orderBy: { lastName: "asc" },
-        }),
-        prisma.company.findMany({
-          where: { type: CompanyType.client },
-          orderBy: { name: "asc" },
-          select: { id: true, name: true },
-        }),
-      ])
-    : [[], []];
+  const { coordinatorUsers, clientCompanies } = await loadProjectEditorData(
+    project.companyId,
+    canEdit,
+    isDeleted
+  );
 
   const projectForForm = {
     id: project.id,

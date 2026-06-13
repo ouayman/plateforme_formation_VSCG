@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { CompanyType } from "@prisma/client";
+import { invalidateClientCompaniesCache } from "@/lib/cache/client-companies";
 import { requireAdminApi, requireStaffApi } from "@/lib/auth/require";
 import { prisma } from "@/lib/prisma";
 import { createCompanySchema } from "@/lib/validations/company";
@@ -35,6 +36,8 @@ export async function POST(req: Request) {
       logoUrl: logoUrl || null,
     },
   });
+
+  invalidateClientCompaniesCache();
 
   return NextResponse.json(company, { status: 201 });
 }

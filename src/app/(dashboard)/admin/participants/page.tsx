@@ -17,7 +17,15 @@ export default async function AdminParticipantsPage() {
         projectRoles: { none: {} },
       },
       orderBy: { lastName: "asc" },
-      include: {
+      take: 500,
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        avatarUrl: true,
+        companyId: true,
+        loginCount: true,
         company: { select: { id: true, name: true } },
       },
     }),

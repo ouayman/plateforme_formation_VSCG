@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { GlobalRole, UserType } from "@prisma/client";
 import { requireAdminApi } from "@/lib/auth/require";
 import { prisma } from "@/lib/prisma";
+import { invalidateTrainersListCache } from "@/lib/cache/trainers-list";
 import { getInternalCompany } from "@/lib/platform-settings";
 import { sendWelcomeEmail } from "@/lib/mail/send-welcome";
 import { setUserSkillDomains } from "@/lib/skill-domain";
@@ -76,6 +77,7 @@ export async function POST(req: Request) {
   });
 
   await setUserSkillDomains(user.id, parsed.data.skillDomainIds);
+  invalidateTrainersListCache();
 
   try {
     await sendWelcomeEmail(user.email, user.firstName);

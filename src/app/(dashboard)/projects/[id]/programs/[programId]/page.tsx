@@ -1,8 +1,12 @@
+import { Suspense } from "react";
 import { notFound, redirect } from "next/navigation";
-import { SessionStatus } from "@prisma/client";
 import { Route } from "lucide-react";
 import { requireAuth } from "@/lib/auth/require";
-import { prisma } from "@/lib/prisma";
+import {
+  countProgramFeedbacks,
+  loadProgramCore,
+  loadTrainingAttachmentCounts,
+} from "@/lib/loaders/program-detail";
 import {
   canAccessProgram,
   canManageProgramParticipants,
@@ -15,6 +19,10 @@ import { participantRoutes } from "@/lib/routes";
 import { ProgramEditButton } from "@/components/features/programs/program-form-modal";
 import { mapTrainingCardRow } from "@/lib/training-ui";
 import { ProgramDetailTabs } from "@/components/features/programs/program-detail-tabs";
+import { ProgramParticipantsPanel } from "@/components/features/programs/program-participants-panel";
+import { ProgramParticipantsSkeleton } from "@/components/features/programs/program-participants-skeleton";
+import { ProgramFeedbacksPanel } from "@/components/features/programs/program-feedbacks-panel";
+import { ProgramFeedbacksSkeleton } from "@/components/features/programs/program-feedbacks-skeleton";
 import { cn } from "@/lib/utils";
 
 export default async function ProgramDetailPage({
@@ -32,133 +40,47 @@ export default async function ProgramDetailPage({
   if (!allowed) redirect("/projects");
   if (participantOnly) redirect(participantRoutes.trainings);
 
-  const [program, canEditStaff, canManageParticipants, canViewFeedbacks] =
+  const canViewFeedbacksPromise = canViewAllFeedbacks(
+    user.id,
+    params.id,
+    user.permissions
+  );
+
+  const [program, canEditStaff, canManageParticipants, canViewFeedbacks, feedbackCount] =
     await Promise.all([
-      prisma.program.findUnique({
-        where: { id: params.programId, projectId: params.id },
-        select: {
-          id: true,
-          name: true,
-          orderIndex: true,
-          project: {
-            select: {
-              name: true,
-              companyId: true,
-            },
-          },
-          trainings: {
-            orderBy: { orderIndex: "asc" },
-            select: {
-              id: true,
-              title: true,
-              description: true,
-              orderIndex: true,
-              _count: {
-                select: {
-                  sessions: true,
-                  participants: { where: { deletedAt: null } },
-                },
-              },
-              sessions: {
-                where: { status: { not: SessionStatus.cancelled } },
-                select: { startDatetime: true, endDatetime: true },
-              },
-              posts: {
-                select: { _count: { select: { attachments: true } } },
-              },
-            },
-          },
-          _count: { select: { participants: true } },
-        },
-      }),
+      loadProgramCore(params.programId, params.id),
       canManageProjects(user.id, user.permissions),
       canManageProgramParticipants(user.id, params.id, user.permissions),
-      canViewAllFeedbacks(user.id, params.id, user.permissions),
+      canViewFeedbacksPromise,
+      canViewFeedbacksPromise.then((canView) =>
+        canView ? countProgramFeedbacks(params.programId) : 0
+      ),
     ]);
 
   if (!program) notFound();
 
-  const needsParticipantsData = canManageParticipants || canViewFeedbacks;
+  const attachmentCounts = await loadTrainingAttachmentCounts(
+    program.trainings.map((training) => training.id)
+  );
 
-  const [participantsRows, programFeedbacks, userTrainingRows] = await Promise.all([
-    needsParticipantsData
-      ? prisma.userProgram.findMany({
-          where: { programId: params.programId },
-          select: {
-            id: true,
-            userId: true,
-            user: {
-              select: {
-                firstName: true,
-                lastName: true,
-                email: true,
-              },
-            },
-          },
-          orderBy: { user: { lastName: "asc" } },
-        })
-      : Promise.resolve([]),
-    canViewFeedbacks
-      ? prisma.feedback.findMany({
-          where: { training: { programId: params.programId } },
-          include: {
-            user: { select: { firstName: true, lastName: true, email: true } },
-            training: { select: { id: true, title: true } },
-          },
-          orderBy: { createdAt: "desc" },
-        })
-      : Promise.resolve([]),
-    needsParticipantsData
-      ? prisma.userTraining.findMany({
-          where: {
-            deletedAt: null,
-            training: { programId: params.programId },
-          },
-          select: {
-            userId: true,
-            training: { select: { id: true, title: true, orderIndex: true } },
-          },
-        })
-      : Promise.resolve([]),
-  ]);
-
-  const trainingsByUserId = new Map<
-    string,
-    { id: string; title: string; orderIndex: number }[]
-  >();
-  for (const row of userTrainingRows) {
-    const list = trainingsByUserId.get(row.userId) ?? [];
-    list.push(row.training);
-    trainingsByUserId.set(row.userId, list);
-  }
+  const needsParticipantsPanel = canManageParticipants || canViewFeedbacks;
 
   const nextOrder =
     program.trainings.length > 0
       ? Math.max(...program.trainings.map((t) => t.orderIndex)) + 1
       : 0;
 
-  const participants = participantsRows.map((p) => ({
-    id: p.id,
-    userId: p.userId,
-    user: {
-      firstName: p.user.firstName,
-      lastName: p.user.lastName,
-      email: p.user.email,
-    },
-    trainings: (trainingsByUserId.get(p.userId) ?? []).sort(
-      (a, b) => a.orderIndex - b.orderIndex
-    ),
-  }));
-
-  const trainingCards = program.trainings.map(mapTrainingCardRow);
+  const trainingCards = program.trainings.map((training) =>
+    mapTrainingCardRow({
+      ...training,
+      documentCount: attachmentCounts.get(training.id) ?? 0,
+    })
+  );
   const trainingOptions = program.trainings.map((t) => ({
     id: t.id,
     title: t.title,
     orderIndex: t.orderIndex,
   }));
-  const feedbackTrainingOptions = trainingOptions.filter((t) =>
-    programFeedbacks.some((f) => f.training?.id === t.id)
-  );
 
   return (
     <div className="space-y-8">
@@ -204,17 +126,30 @@ export default async function ProgramDetailPage({
         canManageParticipants={canManageParticipants}
         canViewAllFeedbacks={canViewFeedbacks}
         trainings={trainingCards}
-        participants={participants}
         nextOrder={nextOrder}
-        allFeedbacks={programFeedbacks.map((f) => ({
-          id: f.id,
-          rating: f.rating,
-          comment: f.comment,
-          createdAt: f.createdAt.toISOString(),
-          user: f.user,
-          training: f.training,
-        }))}
-        feedbackTrainingOptions={feedbackTrainingOptions}
+        participantCount={program._count.participants}
+        feedbackCount={feedbackCount}
+        participantsPanel={
+          needsParticipantsPanel ? (
+            <Suspense fallback={<ProgramParticipantsSkeleton />}>
+              <ProgramParticipantsPanel
+                programId={params.programId}
+                canManageParticipants={canManageParticipants}
+                trainingOptions={trainingOptions}
+              />
+            </Suspense>
+          ) : undefined
+        }
+        feedbacksPanel={
+          canViewFeedbacks ? (
+            <Suspense fallback={<ProgramFeedbacksSkeleton />}>
+              <ProgramFeedbacksPanel
+                programId={params.programId}
+                canViewAllFeedbacks={canViewFeedbacks}
+              />
+            </Suspense>
+          ) : undefined
+        }
       />
     </div>
   );

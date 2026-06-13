@@ -62,19 +62,18 @@ export async function canManageProjects(userId: string, perms?: UserPermissions)
   return isStaff(p);
 }
 
-export async function canAccessProject(
+type ProjectAccessSnapshot = {
+  deletedAt: Date | null;
+  companyId: string;
+};
+
+async function evaluateProjectAccess(
   userId: string,
   projectId: string,
-  perms?: UserPermissions
+  snapshot: ProjectAccessSnapshot,
+  p: UserPermissions
 ) {
-  const p = perms ?? (await getUserPermissions(userId));
-
-  const project = await prisma.project.findUnique({
-    where: { id: projectId },
-    select: { deletedAt: true, companyId: true },
-  });
-  if (!project) return false;
-  if (project.deletedAt && !(await canManageProjects(userId, p))) return false;
+  if (snapshot.deletedAt && !(await canManageProjects(userId, p))) return false;
 
   if (p.isInternal) return true;
   if (isStaff(p)) return true;
@@ -90,6 +89,31 @@ export async function canAccessProject(
     select: { id: true },
   });
   return !!enrolled;
+}
+
+export async function canAccessProjectWithSnapshot(
+  userId: string,
+  projectId: string,
+  snapshot: ProjectAccessSnapshot,
+  perms?: UserPermissions
+) {
+  const p = perms ?? (await getUserPermissions(userId));
+  return evaluateProjectAccess(userId, projectId, snapshot, p);
+}
+
+export async function canAccessProject(
+  userId: string,
+  projectId: string,
+  perms?: UserPermissions
+) {
+  const p = perms ?? (await getUserPermissions(userId));
+
+  const project = await prisma.project.findUnique({
+    where: { id: projectId },
+    select: { deletedAt: true, companyId: true },
+  });
+  if (!project) return false;
+  return evaluateProjectAccess(userId, projectId, project, p);
 }
 
 export function projectListFilter(

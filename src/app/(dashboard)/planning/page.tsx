@@ -1,12 +1,15 @@
 import { redirect } from "next/navigation";
-import { ProjectRole, SessionStatus } from "@prisma/client";
 import { CalendarDays } from "lucide-react";
 import { requireAuth } from "@/lib/auth/require";
 import { getActiveCompanyId } from "@/lib/active-company";
-import { prisma } from "@/lib/prisma";
-import { getParticipantTrainings } from "@/lib/participant";
-import { mapParticipantUiData } from "@/lib/participant-ui";
-import { isParticipantOnly, isStaff } from "@/lib/permissions";
+import {
+  loadParticipantPlanningSessions,
+  loadStaffPlanningSessions,
+  loadTrainerPlanningData,
+  splitParticipantPlanningSessions,
+  verifyTrainerPlanningAccess,
+} from "@/lib/loaders/planning";
+import { isParticipantOnly } from "@/lib/permissions";
 import { countLabel } from "@/lib/format";
 import { SetBreadcrumb } from "@/components/layout/breadcrumb-context";
 import { PageHeader } from "@/components/layout/page-header";
@@ -18,28 +21,6 @@ import {
 } from "@/components/features/planning/trainer-planning-context";
 import { ParticipantPlanningView } from "@/components/features/participant/participant-planning-view";
 
-const sessionListSelect = {
-  location: { select: { name: true } },
-  training: {
-    select: {
-      id: true,
-      title: true,
-      program: {
-        select: {
-          name: true,
-          project: {
-            select: {
-              id: true,
-              name: true,
-              company: { select: { name: true } },
-            },
-          },
-        },
-      },
-    },
-  },
-} as const;
-
 export default async function PlanningPage() {
   const user = await requireAuth();
   const perms = user.permissions;
@@ -48,8 +29,9 @@ export default async function PlanningPage() {
 
   if (participantOnly) {
     const activeCompanyId = await getActiveCompanyId(user.id, user);
-    const trainings = await getParticipantTrainings(user.id, activeCompanyId);
-    const { calendarSessions, upcomingSessions } = mapParticipantUiData(trainings);
+    const rawSessions = await loadParticipantPlanningSessions(user.id, activeCompanyId);
+    const { calendarSessions, upcomingSessions } =
+      splitParticipantPlanningSessions(rawSessions);
 
     return (
       <ParticipantPlanningView
@@ -60,73 +42,17 @@ export default async function PlanningPage() {
     );
   }
 
-  const isStaffUser = isStaff(perms);
-  const hasTrainerProjectRole = perms.projectRoles.some(
-    (r) => r.role === ProjectRole.TRAINER
-  );
-  const needsTrainerAccessCheck =
-    !perms.isTrainer && !isStaffUser && !hasTrainerProjectRole;
-
-  const sessionFilter = perms.isTrainer
-    ? {
-        status: { not: SessionStatus.cancelled },
-        OR: [{ trainerId: user.id }, { trainers: { some: { userId: user.id } } }],
-      }
-    : isStaffUser
-      ? { status: { not: SessionStatus.cancelled } }
-      : {
-          status: { not: SessionStatus.cancelled },
-          OR: [
-            { trainerId: user.id },
-            { trainers: { some: { userId: user.id } } },
-          ],
-        };
-
-  const [sessions, unavailabilities, trainerAccess] = await Promise.all([
-    prisma.session.findMany({
-      where: sessionFilter,
-      orderBy: { startDatetime: "asc" },
-      select: {
-        id: true,
-        startDatetime: true,
-        endDatetime: true,
-        ...sessionListSelect,
-      },
-    }),
-    perms.isTrainer
-      ? prisma.trainerUnavailability.findMany({
-          where: { userId: user.id },
-          orderBy: { startDatetime: "asc" },
-        })
-      : Promise.resolve([]),
-    needsTrainerAccessCheck
-      ? prisma.session.findFirst({
-          where: { trainerId: user.id },
-          select: { id: true },
-        })
-      : Promise.resolve(null),
-  ]);
-
-  if (needsTrainerAccessCheck && !trainerAccess) {
+  const hasAccess = await verifyTrainerPlanningAccess(user.id, perms);
+  if (!hasAccess) {
     redirect("/dashboard");
   }
 
-  const calendarSessions = sessions.map((session) => ({
-    id: session.id,
-    trainingId: session.training.id,
-    startDatetime: session.startDatetime.toISOString(),
-    endDatetime: session.endDatetime.toISOString(),
-    trainingTitle: session.training.title,
-    projectId: session.training.program.project.id,
-    projectName: session.training.program.project.name,
-    companyName: session.training.program.project.company.name,
-  }));
+  if (perms.isTrainer) {
+    const { sessions, unavailabilities } = await loadTrainerPlanningData(user);
 
-  return (
-    <div className="space-y-8">
-      <SetBreadcrumb items={[{ label: "Planning" }]} />
-
-      {perms.isTrainer ? (
+    return (
+      <div className="space-y-8">
+        <SetBreadcrumb items={[{ label: "Planning" }]} />
         <TrainerPlanningProvider>
           <PageHeader
             icon={CalendarDays}
@@ -135,44 +61,43 @@ export default async function PlanningPage() {
             description="Vos sessions et indisponibilités"
             action={<TrainerPlanningHeaderAction />}
           />
-
           <SectionBlock
             hideTitle
             countLabel={countLabel(sessions.length, "session", "sessions")}
           >
             <TrainerScheduleCalendar
-              sessions={calendarSessions}
-              initialUnavailabilities={unavailabilities.map((u) => ({
-                id: u.id,
-                startDatetime: u.startDatetime.toISOString(),
-                endDatetime: u.endDatetime.toISOString(),
-              }))}
+              sessions={sessions}
+              initialUnavailabilities={unavailabilities}
               showUnavailabilityLegend
             />
           </SectionBlock>
         </TrainerPlanningProvider>
-      ) : (
-        <>
-          <PageHeader
-            icon={CalendarDays}
-            iconVariant="primary"
-            title="Planning"
-            description="Vue consolidée de vos sessions de formation"
-          />
+      </div>
+    );
+  }
 
-          <SectionBlock
-            title="Mes sessions"
-            countLabel={countLabel(sessions.length, "session", "sessions")}
-          >
-            <TrainerScheduleCalendar
-              sessions={calendarSessions}
-              initialUnavailabilities={[]}
-              editable={false}
-              showUnavailabilityLegend={false}
-            />
-          </SectionBlock>
-        </>
-      )}
+  const sessions = await loadStaffPlanningSessions(user, perms);
+
+  return (
+    <div className="space-y-8">
+      <SetBreadcrumb items={[{ label: "Planning" }]} />
+      <PageHeader
+        icon={CalendarDays}
+        iconVariant="primary"
+        title="Planning"
+        description="Vue consolidée de vos sessions de formation"
+      />
+      <SectionBlock
+        title="Mes sessions"
+        countLabel={countLabel(sessions.length, "session", "sessions")}
+      >
+        <TrainerScheduleCalendar
+          sessions={sessions}
+          initialUnavailabilities={[]}
+          editable={false}
+          showUnavailabilityLegend={false}
+        />
+      </SectionBlock>
     </div>
   );
 }

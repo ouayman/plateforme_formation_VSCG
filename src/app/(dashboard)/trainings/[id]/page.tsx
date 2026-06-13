@@ -1,9 +1,13 @@
 import { Suspense } from "react";
 import { notFound, redirect } from "next/navigation";
-import { AttendanceStatus, CertificateStatus, GlobalRole, SessionStatus } from "@prisma/client";
+import { CertificateStatus, SessionStatus } from "@prisma/client";
 import { requireAuth } from "@/lib/auth/require";
-import { prisma } from "@/lib/prisma";
 import { computeAttendancePercent } from "@/lib/attendance-percent";
+import {
+  hasPresentAttendance,
+  loadTrainingRecord,
+  loadTrainingSecondaryData,
+} from "@/lib/loaders/training-detail";
 import {
   canAccessTrainingWithProject,
   canManageProgramParticipants,
@@ -21,70 +25,6 @@ import { TrainingFeedPostsLoader } from "@/components/features/training-feed/tra
 import { FeedPostsSkeleton } from "@/components/features/training-feed/feed-posts-skeleton";
 import { canPublishTrainingFeed } from "@/lib/training-feed";
 
-function trainingSelect(userId: string) {
-  return {
-    id: true,
-    title: true,
-    programId: true,
-    program: {
-      select: {
-        id: true,
-        name: true,
-        projectId: true,
-        project: {
-          select: {
-            id: true,
-            name: true,
-            company: { select: { name: true } },
-          },
-        },
-      },
-    },
-    participants: {
-      where: { userId, deletedAt: null },
-      select: { id: true },
-      take: 1,
-    },
-    sessions: {
-      orderBy: { startDatetime: "asc" as const },
-      select: {
-        id: true,
-        startDatetime: true,
-        endDatetime: true,
-        status: true,
-        location: { select: { name: true, address: true, instructions: true } },
-        trainer: { select: { firstName: true, lastName: true } },
-        trainers: {
-          select: {
-            user: { select: { firstName: true, lastName: true } },
-          },
-        },
-        participants: {
-          where: { userId },
-          select: { attendanceStatus: true },
-        },
-      },
-    },
-    certificates: {
-      where: { userId },
-      select: { status: true },
-    },
-  };
-}
-
-function hasPresentAttendance(
-  sessions: {
-    status: SessionStatus;
-    participants: { attendanceStatus: AttendanceStatus | null }[];
-  }[]
-) {
-  return sessions.some(
-    (session) =>
-      session.status !== SessionStatus.cancelled &&
-      session.participants[0]?.attendanceStatus === AttendanceStatus.present
-  );
-}
-
 export default async function TrainingDetailPage({
   params,
 }: {
@@ -98,42 +38,39 @@ export default async function TrainingDetailPage({
     participantFast !== null
       ? participantFast
       : isParticipantOnly(user.id, user.permissions),
-    prisma.training.findUnique({
-      where: { id: params.id },
-      select: trainingSelect(user.id),
-    }),
+    loadTrainingRecord(params.id, user.id),
   ]);
 
   if (!training) notFound();
 
   const assigned = training.participants.length > 0;
-
-  const hasAccess = await canAccessTrainingWithProject(
-    user.id,
-    params.id,
-    training.program.projectId,
-    user.permissions,
-    { isAssigned: assigned }
-  );
-  if (!hasAccess) {
-    redirect(participantOnly ? participantRoutes.trainings : "/projects");
-  }
-
   const projectId = training.program.projectId;
-  const staffView = isStaff(user.permissions) || user.permissions.isTrainer;
 
   const [
+    hasAccess,
     canPublish,
     canManageCertificates,
     canManageParticipants,
     canManageSessions,
   ] = await Promise.all([
+    canAccessTrainingWithProject(
+      user.id,
+      params.id,
+      projectId,
+      user.permissions,
+      { isAssigned: assigned }
+    ),
     canPublishTrainingFeed(user.id, projectId, user.permissions),
     canManualUnlockCertificate(user.id, projectId, user.permissions, user.companyId),
     canManageProgramParticipants(user.id, projectId, user.permissions, user.companyId),
     canManageTrainingSessions(user.id, projectId, user.permissions),
   ]);
 
+  if (!hasAccess) {
+    redirect(participantOnly ? participantRoutes.trainings : "/projects");
+  }
+
+  const staffView = isStaff(user.permissions) || user.permissions.isTrainer;
   const showFeedbackPanel =
     assigned && (participantOnly || !isStaff(user.permissions));
   const canModerate = canPublish || user.permissions.isAdmin;
@@ -148,75 +85,17 @@ export default async function TrainingDetailPage({
     certificates,
     sessionsForAttendance,
     programPool,
-  ] = await Promise.all([
-    showFeedbackPanel
-      ? prisma.feedback.findUnique({
-          where: {
-            trainingId_userId: { userId: user.id, trainingId: params.id },
-          },
-          select: { rating: true, comment: true },
-        })
-      : Promise.resolve(null),
-    showFeedbackPanel
-      ? Promise.resolve([])
-      : prisma.feedback.findMany({
-          where: { trainingId: params.id },
-          select: {
-            id: true,
-            rating: true,
-            comment: true,
-            createdAt: true,
-            user: { select: { firstName: true, lastName: true, email: true } },
-          },
-          orderBy: { createdAt: "desc" },
-        }),
-    canManageSessions
-      ? prisma.user.findMany({
-          where: { globalRoles: { some: { role: GlobalRole.TRAINER } } },
-          select: { id: true, firstName: true, lastName: true },
-          orderBy: { lastName: "asc" },
-        })
-      : Promise.resolve([]),
-    canManageSessions
-      ? prisma.projectLocation.findMany({
-          where: { projectId },
-          select: { id: true, name: true },
-          orderBy: { name: "asc" },
-        })
-      : Promise.resolve([]),
-    canManageCertificates
-      ? prisma.certificate.findMany({
-          where: { trainingId: training.id },
-          select: {
-            userId: true,
-            status: true,
-            user: { select: { id: true, firstName: true, lastName: true, email: true } },
-          },
-          orderBy: { user: { lastName: "asc" } },
-        })
-      : Promise.resolve([]),
-    canManageCertificates
-      ? prisma.sessionParticipant.findMany({
-          where: {
-            session: {
-              trainingId: training.id,
-              status: { not: SessionStatus.cancelled },
-            },
-          },
-          select: { userId: true, attendanceStatus: true },
-        })
-      : Promise.resolve([]),
-    canManageParticipants
-      ? prisma.userProgram.findMany({
-          where: { programId: training.programId },
-          select: {
-            userId: true,
-            user: { select: { id: true, firstName: true, lastName: true, email: true } },
-          },
-          orderBy: { user: { lastName: "asc" } },
-        })
-      : Promise.resolve([]),
-  ]);
+  ] = await loadTrainingSecondaryData({
+    trainingId: params.id,
+    trainingDbId: training.id,
+    programId: training.programId,
+    projectId,
+    user,
+    showFeedbackPanel,
+    canManageSessions,
+    canManageCertificates,
+    canManageParticipants,
+  });
 
   function getAttendancePercent(userId: string) {
     const rows = sessionsForAttendance
@@ -240,7 +119,7 @@ export default async function TrainingDetailPage({
     : training.sessions.filter((s) => s.status === SessionStatus.confirmed);
   const pastSessions = progressSessions.filter((s) => s.endDatetime < now);
   const attendedCount = pastSessions.filter(
-    (s) => s.participants[0]?.attendanceStatus === AttendanceStatus.present
+    (s) => s.participants[0]?.attendanceStatus === "present"
   ).length;
 
   const progress = {

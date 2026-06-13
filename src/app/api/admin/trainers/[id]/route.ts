@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { GlobalRole } from "@prisma/client";
 import { requireAdminApi } from "@/lib/auth/require";
 import { prisma } from "@/lib/prisma";
+import { invalidateTrainersListCache } from "@/lib/cache/trainers-list";
 import { setUserSkillDomains } from "@/lib/skill-domain";
 import { updateTrainerSchema } from "@/lib/validations/trainer";
 
@@ -71,6 +72,7 @@ export async function PATCH(
   }
 
   const updated = await getTrainer(params.id);
+  invalidateTrainersListCache();
   return NextResponse.json({
     id: updated!.id,
     email: updated!.email,
@@ -108,5 +110,6 @@ export async function DELETE(
     await prisma.user.delete({ where: { id: params.id } });
   }
 
+  invalidateTrainersListCache();
   return NextResponse.json({ ok: true });
 }
