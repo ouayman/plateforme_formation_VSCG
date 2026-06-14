@@ -7,6 +7,7 @@ export type CachedPlatformSettings = {
   organizationName: string;
   logoDarkUrl: string;
   logoLightUrl: string;
+  logoEmailUrl: string | null;
   welcomeSignatory: string;
 };
 
@@ -14,6 +15,7 @@ const DEFAULT_SETTINGS: CachedPlatformSettings = {
   organizationName: "Value Stream Consulting",
   logoDarkUrl: BRANDING.DEFAULT_LOGO_DARK,
   logoLightUrl: BRANDING.DEFAULT_LOGO_LIGHT,
+  logoEmailUrl: null,
   welcomeSignatory: "L'équipe VSCG",
 };
 
@@ -33,6 +35,7 @@ export async function getCachedPlatformSettings(): Promise<CachedPlatformSetting
       organizationName: true,
       logoDarkUrl: true,
       logoLightUrl: true,
+      logoEmailUrl: true,
       welcomeSignatory: true,
     },
   });
@@ -42,6 +45,7 @@ export async function getCachedPlatformSettings(): Promise<CachedPlatformSetting
         organizationName: row.organizationName,
         logoDarkUrl: row.logoDarkUrl || DEFAULT_SETTINGS.logoDarkUrl,
         logoLightUrl: row.logoLightUrl || DEFAULT_SETTINGS.logoLightUrl,
+        logoEmailUrl: row.logoEmailUrl,
         welcomeSignatory: row.welcomeSignatory || DEFAULT_SETTINGS.welcomeSignatory,
       }
     : DEFAULT_SETTINGS;

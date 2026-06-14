@@ -5,6 +5,7 @@ import { Menu } from "lucide-react";
 import { TopbarBreadcrumb } from "@/components/layout/topbar-breadcrumb";
 import { DemoUserSwitcher } from "@/components/auth/demo-user-switcher";
 import { OrgLogo } from "@/components/layout/org-logo";
+import { staffRoutes } from "@/lib/routes";
 
 type TopbarProps = {
   demoMode?: boolean;
@@ -19,7 +20,7 @@ export function Topbar({
   demoMode = false,
   headerLogoUrl,
   headerLogoAlt = "Entreprise",
-  homeHref = "/dashboard",
+  homeHref = staffRoutes.home,
   isParticipantOnly = false,
   onMenuClick,
 }: TopbarProps) {

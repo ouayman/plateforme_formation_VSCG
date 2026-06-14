@@ -7,6 +7,7 @@ import {
 } from "@/lib/cache/platform-settings-cache";
 import {
   isParticipantOnly,
+  canManageClientCompany,
   resolveParticipantOnlyFast,
   resolvePlanningAccess,
   resolvePlanningAccessFast,
@@ -17,6 +18,7 @@ type DashboardUser = NonNullable<Awaited<ReturnType<typeof getCurrentUser>>>;
 export type DashboardLayoutContext = {
   showPlanning: boolean;
   participantOnly: boolean;
+  canManageClientCompany: boolean;
   organizationName: string;
   organizationLogoDarkUrl: string;
   companyOptions: { id: string; name: string }[];
@@ -33,17 +35,27 @@ function mergeContext(
   user: DashboardUser,
   settings: CachedPlatformSettings,
   showPlanning: boolean,
-  participantOnly: boolean
+  participantOnly: boolean,
+  canManageClientCompany: boolean
 ): DashboardLayoutContext {
   const clientCompany = clientCompanyFromUser(user);
   return {
     showPlanning,
     participantOnly,
+    canManageClientCompany,
     organizationName: settings.organizationName,
     organizationLogoDarkUrl: settings.logoDarkUrl,
     companyOptions: clientCompany.companyOptions,
     activeCompanyId: clientCompany.activeCompanyId,
   };
+}
+
+async function resolveCanManageClientCompany(
+  user: DashboardUser,
+  activeCompanyId: string | null
+) {
+  if (!activeCompanyId) return false;
+  return canManageClientCompany(user.id, activeCompanyId, user.permissions);
 }
 
 /** Charge user + settings en parallèle, puis complète le contexte shell (sans bloquer les pages dans un 2e composant async). */
@@ -63,36 +75,33 @@ export async function loadDashboardShellData(): Promise<{
   const planningFast = resolvePlanningAccessFast(user.permissions);
   const participantFast = resolveParticipantOnlyFast(user.permissions);
 
+  const clientCompany = clientCompanyFromUser(user);
+
   if (planningFast !== null && participantFast !== null) {
+    const canManageCompany = await resolveCanManageClientCompany(
+      user,
+      clientCompany.activeCompanyId
+    );
     return {
       user,
-      ctx: mergeContext(user, settings, planningFast, participantFast),
+      ctx: mergeContext(
+        user,
+        settings,
+        planningFast,
+        participantFast,
+        canManageCompany
+      ),
     };
   }
 
-  const [showPlanning, participantOnly] = await Promise.all([
+  const [showPlanning, participantOnly, canManageCompany] = await Promise.all([
     planningFast !== null ? planningFast : resolvePlanningAccess(user.id, user.permissions),
     participantFast !== null ? participantFast : isParticipantOnly(user.id, user.permissions),
+    resolveCanManageClientCompany(user, clientCompany.activeCompanyId),
   ]);
 
   return {
     user,
-    ctx: mergeContext(user, settings, showPlanning, participantOnly),
+    ctx: mergeContext(user, settings, showPlanning, participantOnly, canManageCompany),
   };
-}
-
-/** @deprecated Préférer loadDashboardShellData() depuis le layout. */
-export async function getDashboardLayoutContext(
-  user: DashboardUser
-): Promise<DashboardLayoutContext> {
-  const settings = await getCachedPlatformSettings();
-  const planningFast = resolvePlanningAccessFast(user.permissions);
-  const participantFast = resolveParticipantOnlyFast(user.permissions);
-
-  const [showPlanning, participantOnly] = await Promise.all([
-    planningFast !== null ? planningFast : resolvePlanningAccess(user.id, user.permissions),
-    participantFast !== null ? participantFast : isParticipantOnly(user.id, user.permissions),
-  ]);
-
-  return mergeContext(user, settings, showPlanning, participantOnly);
 }

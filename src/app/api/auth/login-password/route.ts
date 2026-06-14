@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { verifyPassword } from "@/lib/auth/password";
+import { resolveLandingPath } from "@/lib/auth/landing";
 import { completeSignIn } from "@/lib/auth/sign-in";
 import { prisma } from "@/lib/prisma";
 import { loginPasswordSchema } from "@/lib/validations/password";
@@ -35,5 +36,7 @@ export async function POST(req: Request) {
 
   await completeSignIn(user.id, user.email);
 
-  return NextResponse.json({ ok: true });
+  const redirectTo = await resolveLandingPath(user.id);
+
+  return NextResponse.json({ ok: true, redirectTo });
 }

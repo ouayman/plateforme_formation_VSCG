@@ -10,6 +10,7 @@ import {
   verifyTrainerPlanningAccess,
 } from "@/lib/loaders/planning";
 import { isParticipantOnly } from "@/lib/permissions";
+import { staffRoutes } from "@/lib/routes";
 import { countLabel } from "@/lib/format";
 import { SetBreadcrumb } from "@/components/layout/breadcrumb-context";
 import { PageHeader } from "@/components/layout/page-header";
@@ -44,7 +45,7 @@ export default async function PlanningPage() {
 
   const hasAccess = await verifyTrainerPlanningAccess(user.id, perms);
   if (!hasAccess) {
-    redirect("/dashboard");
+    redirect(staffRoutes.home);
   }
 
   if (perms.isTrainer) {

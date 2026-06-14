@@ -342,12 +342,8 @@ async function main() {
   }
 
   routes.push(
-    await timed("P0 /dashboard stats", 3, async () => {
-      await Promise.all([
-        prisma.project.count(),
-        prisma.session.count({ where: { startDatetime: { gte: new Date() } } }),
-        prisma.userProgram.count(),
-      ]);
+    await timed("P0 /projects list", 3, async () => {
+      await prisma.project.count();
     })
   );
 

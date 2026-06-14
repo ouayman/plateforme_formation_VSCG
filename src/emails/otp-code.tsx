@@ -1,13 +1,16 @@
-import { APP_NAME, BRANDING, COLORS, OTP } from "@/lib/constants";
+import { APP_NAME, COLORS, OTP } from "@/lib/constants";
 
 type OtpEmailProps = {
   code: string;
-  appUrl: string;
+  logoUrl: string;
+  organizationName?: string;
 };
 
-export function renderOtpEmail({ code, appUrl }: OtpEmailProps): string {
-  const logoUrl = `${appUrl}${BRANDING.DEFAULT_FAVICON}`;
-
+export function renderOtpEmail({
+  code,
+  logoUrl,
+  organizationName = APP_NAME,
+}: OtpEmailProps): string {
   return `<!DOCTYPE html>
 <html lang="fr">
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
@@ -17,8 +20,8 @@ export function renderOtpEmail({ code, appUrl }: OtpEmailProps): string {
       <table width="100%" style="max-width:480px;background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.08);">
         <tr>
           <td style="background:${COLORS.secondary};padding:32px;text-align:center;">
-            <img src="${logoUrl}" alt="${APP_NAME}" width="48" height="48" style="display:block;margin:0 auto 12px;" />
-            <p style="margin:0;color:#ffffff;font-size:18px;font-weight:600;">${APP_NAME}</p>
+            <img src="${logoUrl}" alt="${organizationName}" width="48" height="48" style="display:block;margin:0 auto 12px;max-width:200px;height:auto;" />
+            <p style="margin:0;color:#ffffff;font-size:18px;font-weight:600;">${organizationName}</p>
           </td>
         </tr>
         <tr>

@@ -6,6 +6,7 @@ export const platformSettingsSchema = z.object({
   organizationName: z.string().min(1).max(200),
   logoDarkUrl: mediaPathSchema,
   logoLightUrl: mediaPathSchema,
+  logoEmailUrl: mediaPathSchema.nullable().optional(),
   welcomeSignatory: z.string().min(1).max(200),
 });
 

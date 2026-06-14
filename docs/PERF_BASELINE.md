@@ -128,7 +128,7 @@ Phase 4 (optionnel) : fenêtre temporelle planning staff si volume extrême, cac
 - `src/lib/loaders/project-detail.ts` — `loadProjectDetail` + `loadProjectEditorData`
 - `canAccessProjectWithSnapshot()` — contrôle accès sans 2e `project.findUnique`
 - `getCachedClientCompanies()` — TTL 60 s (`/projects`, formulaire projet)
-- `src/lib/loaders/dashboard.ts` — stats tableau de bord en `Promise.all`
+- Stats projet / planning — loaders dédiés en `Promise.all` où pertinent
 - `/sessions/[id]` : `include` → `select` + accès via snapshot projet chargé
 
 ## Loaders uniformisés (dashboard)

@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
-import { APP_NAME, BRANDING } from "@/lib/constants";
+import { APP_FAVICON, APP_NAME } from "@/lib/constants";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 
@@ -9,8 +9,9 @@ export const metadata: Metadata = {
   title: APP_NAME,
   description: "Plateforme de pilotage des formations",
   icons: {
-    icon: BRANDING.DEFAULT_FAVICON,
-    apple: BRANDING.DEFAULT_FAVICON,
+    icon: [{ url: APP_FAVICON, sizes: "any" }],
+    shortcut: APP_FAVICON,
+    apple: APP_FAVICON,
   },
 };
 

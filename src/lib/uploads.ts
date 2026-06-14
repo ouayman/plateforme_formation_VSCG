@@ -27,7 +27,7 @@ export async function savePostAttachment(
 }
 
 export async function savePlatformBrandImage(
-  kind: "dark" | "light",
+  kind: "dark" | "light" | "email",
   file: File
 ): Promise<string> {
   const ext = getExtension(file.name) || ".png";

@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { ImagePlus, Loader2 } from "lucide-react";
+import { ImagePlus, Loader2, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { OrgLogo, type BrandLogoVariant } from "@/components/layout/org-logo";
@@ -17,6 +17,7 @@ type ImageUploadFieldProps = {
   previewOnDark?: boolean;
   onUploaded: (path: string) => void;
   uploadUrl: string;
+  onRemoved?: () => void;
 };
 
 export function ImageUploadField({
@@ -29,9 +30,11 @@ export function ImageUploadField({
   previewOnDark = false,
   onUploaded,
   uploadUrl,
+  onRemoved,
 }: ImageUploadFieldProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
+  const [removing, setRemoving] = useState(false);
   const [error, setError] = useState("");
   const [cacheVersion, setCacheVersion] = useState(() => Date.now());
 
@@ -61,6 +64,24 @@ export function ImageUploadField({
     if (inputRef.current) inputRef.current.value = "";
   }
 
+  async function handleRemove() {
+    if (!value || !onRemoved) return;
+    if (!window.confirm("Supprimer ce logo ?")) return;
+
+    setRemoving(true);
+    setError("");
+
+    const res = await fetch(uploadUrl, { method: "DELETE" });
+    setRemoving(false);
+
+    if (!res.ok) {
+      setError("Erreur lors de la suppression.");
+      return;
+    }
+
+    onRemoved();
+  }
+
   return (
     <div className="space-y-2">
       <Label htmlFor={id}>{label}</Label>
@@ -82,7 +103,7 @@ export function ImageUploadField({
             <span className="text-[12px] text-muted-foreground">Aucun logo</span>
           )}
         </div>
-        <div className="shrink-0">
+        <div className="flex shrink-0 flex-col gap-2">
           <input
             ref={inputRef}
             id={id}
@@ -95,7 +116,7 @@ export function ImageUploadField({
             type="button"
             variant="outline"
             size="sm"
-            disabled={uploading}
+            disabled={uploading || removing}
             onClick={() => inputRef.current?.click()}
           >
             {uploading ? (
@@ -105,8 +126,25 @@ export function ImageUploadField({
             )}
             {uploading ? "Chargement..." : "Charger une image"}
           </Button>
-          {hint && <p className="mt-2 max-w-[220px] text-[12px] text-muted-foreground">{hint}</p>}
-          {error && <p className="mt-1 text-[12px] text-destructive">{error}</p>}
+          {value && onRemoved && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={uploading || removing}
+              className="text-destructive hover:text-destructive"
+              onClick={() => void handleRemove()}
+            >
+              {removing ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Trash2 className="h-4 w-4" />
+              )}
+              {removing ? "Suppression..." : "Supprimer le logo"}
+            </Button>
+          )}
+          {hint && <p className="max-w-[220px] text-[12px] text-muted-foreground">{hint}</p>}
+          {error && <p className="text-[12px] text-destructive">{error}</p>}
         </div>
       </div>
     </div>

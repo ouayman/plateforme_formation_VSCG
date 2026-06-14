@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth/get-current-user";
 import { canAccessProject, canManageProjects, isStaff } from "@/lib/permissions";
+import { staffRoutes } from "@/lib/routes";
 
 export async function requireAuth() {
   const user = await getCurrentUser();
@@ -11,13 +12,13 @@ export async function requireAuth() {
 
 export async function requireAdmin() {
   const user = await requireAuth();
-  if (!user.permissions.isAdmin) redirect("/dashboard");
+  if (!user.permissions.isAdmin) redirect(staffRoutes.home);
   return user;
 }
 
 export async function requireStaff() {
   const user = await requireAuth();
-  if (!isStaff(user.permissions)) redirect("/dashboard");
+  if (!isStaff(user.permissions)) redirect(staffRoutes.home);
   return user;
 }
 

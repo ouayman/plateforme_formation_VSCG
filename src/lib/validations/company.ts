@@ -2,6 +2,12 @@ import { z } from "zod";
 
 const mediaPathSchema = z.string().max(500).optional().or(z.literal(""));
 
+export const clientUpdateCompanySchema = z.object({
+  name: z.string().min(1).max(200),
+});
+
+export type ClientUpdateCompanyInput = z.infer<typeof clientUpdateCompanySchema>;
+
 export const createCompanySchema = z.object({
   name: z.string().min(1).max(200),
   type: z.literal("client").default("client"),

@@ -105,8 +105,8 @@ async function resolvePaths() {
 
   const paths = [
     "/login",
-    "/dashboard",
     "/projects",
+    "/my-trainings",
     "/admin/trainers",
     "/admin/users",
     "/planning",

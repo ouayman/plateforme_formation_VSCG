@@ -14,6 +14,7 @@ type PlatformSettingsFormProps = {
     organizationName: string;
     logoDarkUrl: string;
     logoLightUrl: string;
+    logoEmailUrl: string | null;
     welcomeSignatory: string;
   };
 };
@@ -122,6 +123,20 @@ export function PlatformSettingsForm({ initial }: PlatformSettingsFormProps) {
           uploadUrl="/api/admin/settings/upload?kind=light"
           onUploaded={(path) => {
             setForm((prev) => ({ ...prev, logoLightUrl: path }));
+            refreshCurrentPath();
+          }}
+        />
+
+        <ImageUploadField
+          id="platform-logo-email"
+          label="Logo des emails"
+          hint="Affiché dans tous les emails (OTP, bienvenue, reset mot de passe…). PNG, JPG ou WebP — max 5 Mo. Servi en URL publique absolue via APP_URL (obligatoire en prod Vercel). Sans logo email, le logo fond clair est utilisé."
+          value={form.logoEmailUrl ?? ""}
+          alt={`${form.organizationName} — email`}
+          previewVariant="login"
+          uploadUrl="/api/admin/settings/upload?kind=email"
+          onUploaded={(path) => {
+            setForm((prev) => ({ ...prev, logoEmailUrl: path }));
             refreshCurrentPath();
           }}
         />

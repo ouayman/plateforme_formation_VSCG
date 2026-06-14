@@ -13,6 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { OrgLogo } from "@/components/layout/org-logo";
 import { DemoUserSwitcher } from "@/components/auth/demo-user-switcher";
 import { BRANDING, PASSWORD } from "@/lib/constants";
+import { staffRoutes } from "@/lib/routes";
 
 type LoginFormProps = {
   demoMode?: boolean;
@@ -91,7 +92,8 @@ export function LoginForm({
       return;
     }
 
-    router.push("/dashboard");
+    const data = await res.json();
+    router.push(data.redirectTo ?? staffRoutes.home);
     refreshCurrentPath();
   }
 
@@ -140,7 +142,8 @@ export function LoginForm({
       return;
     }
 
-    router.push("/dashboard");
+    const data = await res.json();
+    router.push(data.redirectTo ?? staffRoutes.home);
     refreshCurrentPath();
   }
 

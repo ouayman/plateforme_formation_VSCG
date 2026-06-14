@@ -231,6 +231,7 @@ model PlatformSettings {
   organizationName String   @default("Value Stream Consulting") @map("organization_name")
   logoDarkUrl      String   @default("/branding/vscg-logo-dark.png") @map("logo_url")
   logoLightUrl     String   @default("/branding/vscg-icon.png") @map("icon_url")
+  logoEmailUrl     String?  @map("logo_email_url")
   welcomeSignatory String   @default("L'équipe VSCG") @map("welcome_signatory")
   updatedAt        DateTime @updatedAt @map("updated_at")
 

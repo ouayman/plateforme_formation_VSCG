@@ -2,12 +2,13 @@ import { Suspense } from "react";
 import { redirect } from "next/navigation";
 
 import { ResetPasswordForm } from "@/components/auth/reset-password-form";
+import { resolveLandingPathFromUser } from "@/lib/auth/landing";
 import { getCurrentUser } from "@/lib/auth/get-current-user";
 import { getPlatformSettings } from "@/lib/platform-settings";
 
 export default async function ResetPasswordPage() {
   const user = await getCurrentUser();
-  if (user) redirect("/dashboard");
+  if (user) redirect(await resolveLandingPathFromUser(user));
 
   const settings = await getPlatformSettings();
 

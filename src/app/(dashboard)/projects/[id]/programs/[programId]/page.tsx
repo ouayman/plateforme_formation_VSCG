@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import { notFound, redirect } from "next/navigation";
 import { Route } from "lucide-react";
+import { redirectIfParticipantOnly } from "@/lib/auth/participant-guard";
 import { requireAuth } from "@/lib/auth/require";
 import {
   countProgramFeedbacks,
@@ -12,10 +13,9 @@ import {
   canManageProgramParticipants,
   canManageProjects,
   canViewAllFeedbacks,
-  isParticipantOnly,
 } from "@/lib/permissions";
 import { SetBreadcrumb } from "@/components/layout/breadcrumb-context";
-import { participantRoutes } from "@/lib/routes";
+import { PageHeader } from "@/components/layout/page-header";
 import { LazyProgramEditButton as ProgramEditButton } from "@/components/features/programs/lazy-modals";
 import { mapTrainingCardRow } from "@/lib/training-ui";
 import { ProgramDetailTabs } from "@/components/features/programs/program-detail-tabs";
@@ -23,7 +23,6 @@ import { ProgramParticipantsPanel } from "@/components/features/programs/program
 import { ProgramParticipantsSkeleton } from "@/components/features/programs/program-participants-skeleton";
 import { ProgramFeedbacksPanel } from "@/components/features/programs/program-feedbacks-panel";
 import { ProgramFeedbacksSkeleton } from "@/components/features/programs/program-feedbacks-skeleton";
-import { cn } from "@/lib/utils";
 
 export default async function ProgramDetailPage({
   params,
@@ -31,14 +30,11 @@ export default async function ProgramDetailPage({
   params: { id: string; programId: string };
 }) {
   const user = await requireAuth();
+  await redirectIfParticipantOnly(user);
 
-  const [participantOnly, allowed] = await Promise.all([
-    isParticipantOnly(user.id, user.permissions),
-    canAccessProgram(user.id, params.programId, user.permissions),
-  ]);
+  const allowed = await canAccessProgram(user.id, params.programId, user.permissions);
 
   if (!allowed) redirect("/projects");
-  if (participantOnly) redirect(participantRoutes.trainings);
 
   const canViewFeedbacksPromise = canViewAllFeedbacks(
     user.id,
@@ -46,7 +42,7 @@ export default async function ProgramDetailPage({
     user.permissions
   );
 
-  const [program, canEditStaff, canManageParticipants, canViewFeedbacks, feedbackCount] =
+  const [program, canEditStructure, canManageParticipants, canViewFeedbacks, feedbackCount] =
     await Promise.all([
       loadProgramCore(params.programId, params.id),
       canManageProjects(user.id, user.permissions),
@@ -92,37 +88,28 @@ export default async function ProgramDetailPage({
         ]}
       />
 
-      <div className="flex items-start gap-3 sm:gap-4">
-        <div className={cn("icon-badge-primary", "h-10 w-10 sm:h-11 sm:w-11")}>
-          <Route className="h-5 w-5" strokeWidth={2} />
-        </div>
-        <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-            <h1 className="text-xl font-bold tracking-tight text-foreground sm:text-2xl">
-              {program.name}
-            </h1>
-            {canEditStaff && (
-              <ProgramEditButton
-                projectId={params.id}
-                program={{
-                  id: program.id,
-                  name: program.name,
-                  orderIndex: program.orderIndex,
-                }}
-              />
-            )}
-          </div>
-          <p className="mt-1 text-[14px] text-muted-foreground sm:text-[15px]">
-            {program.trainings.length} formation{program.trainings.length !== 1 ? "s" : ""} ·{" "}
-            {program._count.participants} participant
-            {program._count.participants !== 1 ? "s" : ""}
-          </p>
-        </div>
-      </div>
+      <PageHeader
+        icon={Route}
+        iconVariant="primary"
+        title={program.name}
+        description={`${program.trainings.length} formation${program.trainings.length !== 1 ? "s" : ""} · ${program._count.participants} participant${program._count.participants !== 1 ? "s" : ""}`}
+        action={
+          canEditStructure ? (
+            <ProgramEditButton
+              projectId={params.id}
+              program={{
+                id: program.id,
+                name: program.name,
+                orderIndex: program.orderIndex,
+              }}
+            />
+          ) : undefined
+        }
+      />
 
       <ProgramDetailTabs
         programId={program.id}
-        canEditStaff={canEditStaff}
+        canEditStructure={canEditStructure}
         canManageParticipants={canManageParticipants}
         canViewAllFeedbacks={canViewFeedbacks}
         trainings={trainingCards}

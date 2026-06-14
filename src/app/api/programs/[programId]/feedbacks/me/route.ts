@@ -88,7 +88,8 @@ export async function PUT(
     user.email,
     user.firstName,
     training.title,
-    parsed.data.rating
+    parsed.data.rating,
+    req
   ).catch((error) => console.error("[feedback] email confirmation:", error));
 
   return NextResponse.json(feedback);

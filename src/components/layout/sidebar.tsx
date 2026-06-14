@@ -9,7 +9,6 @@ import {
   FolderKanban,
   GraduationCap,
   Layers,
-  LayoutDashboard,
   Settings,
   Users,
   X,
@@ -19,12 +18,9 @@ import { OrgLogo } from "@/components/layout/org-logo";
 import { CompanySwitcher } from "@/components/layout/company-switcher";
 import { SidebarUserMenu } from "@/components/layout/sidebar-user-menu";
 import { BRANDING } from "@/lib/constants";
-import { participantRoutes } from "@/lib/routes";
+import { participantRoutes, staffRoutes } from "@/lib/routes";
 
-const staffNavItems = [
-  { href: "/dashboard", label: "Tableau de bord", icon: LayoutDashboard },
-  { href: "/projects", label: "Projets", icon: FolderKanban },
-];
+const staffNavItems = [{ href: staffRoutes.projects, label: "Projets", icon: FolderKanban }];
 
 const participantNavItems = [
   { href: participantRoutes.trainings, label: "Mes formations", icon: GraduationCap },
@@ -56,6 +52,7 @@ type SidebarProps = {
   userAvatarUrl?: string | null;
   companyOptions?: CompanyOption[];
   activeCompanyId?: string | null;
+  canManageClientCompany?: boolean;
   onNavigate?: () => void;
   onClose?: () => void;
 };
@@ -93,8 +90,6 @@ function NavLink({
   );
 }
 
-const trainerItems = [{ href: "/planning", label: "Planning", icon: CalendarDays }];
-
 export function Sidebar({
   isAdmin = false,
   showPlanning = false,
@@ -109,12 +104,20 @@ export function Sidebar({
   userAvatarUrl = null,
   companyOptions = [],
   activeCompanyId = null,
+  canManageClientCompany = false,
   onNavigate,
   onClose,
 }: SidebarProps) {
   const pathname = usePathname();
-  const navItems = isParticipantOnly ? participantNavItems : staffNavItems;
-  const homeHref = isParticipantOnly ? participantRoutes.trainings : "/dashboard";
+  const mainNavItems = isParticipantOnly
+    ? participantNavItems
+    : [
+        ...staffNavItems,
+        ...(showPlanning
+          ? [{ href: "/planning", label: "Planning", icon: CalendarDays }]
+          : []),
+      ];
+  const homeHref = isParticipantOnly ? participantRoutes.trainings : staffRoutes.home;
 
   const isActive = (href: string) =>
     pathname === href || pathname.startsWith(`${href}/`);
@@ -146,7 +149,7 @@ export function Sidebar({
       )}
 
       <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-4">
-        {navItems.map((item) => (
+        {mainNavItems.map((item) => (
           <NavLink
             key={item.href}
             {...item}
@@ -154,22 +157,6 @@ export function Sidebar({
             onNavigate={onNavigate}
           />
         ))}
-
-        {showPlanning && !isParticipantOnly && (
-          <>
-            <p className="px-3 pb-1 pt-6 text-[10px] font-semibold uppercase tracking-widest text-white/30">
-              Formateur
-            </p>
-            {trainerItems.map((item) => (
-              <NavLink
-                key={item.href}
-                {...item}
-                active={isActive(item.href)}
-                onNavigate={onNavigate}
-              />
-            ))}
-          </>
-        )}
 
         {isAdmin && (
           <>
@@ -188,17 +175,30 @@ export function Sidebar({
         )}
       </nav>
 
-      <div className="border-t border-white/10 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
-        {userName && userEmail ? (
-          <SidebarUserMenu
-            userId={userId}
-            userName={userName}
-            userEmail={userEmail}
-            userFirstName={userFirstName}
-            userLastName={userLastName}
-            avatarUrl={userAvatarUrl}
-          />
-        ) : null}
+      <div>
+        {canManageClientCompany && (
+          <div className="px-3 pt-3">
+            <NavLink
+              href="/account/company"
+              label="Gérer l'entreprise"
+              icon={Building2}
+              active={isActive("/account/company")}
+              onNavigate={onNavigate}
+            />
+          </div>
+        )}
+        <div className="border-t border-white/10 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+          {userName && userEmail ? (
+            <SidebarUserMenu
+              userId={userId}
+              userName={userName}
+              userEmail={userEmail}
+              userFirstName={userFirstName}
+              userLastName={userLastName}
+              avatarUrl={userAvatarUrl}
+            />
+          ) : null}
+        </div>
       </div>
     </aside>
   );

@@ -120,6 +120,10 @@ export function CompanyFormModal({
                 setLogoUrl(path);
                 refreshCurrentPath();
               }}
+              onRemoved={() => {
+                setLogoUrl("");
+                refreshCurrentPath();
+              }}
             />
           ) : (
             <p className="text-[12px] text-muted-foreground">

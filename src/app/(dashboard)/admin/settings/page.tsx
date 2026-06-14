@@ -17,7 +17,7 @@ export default async function AdminSettingsPage() {
         icon={Settings}
         iconVariant="primary"
         title="Paramètres"
-        description="Organisation VSCG — logos fond clair et fond sombre"
+        description="Organisation VSCG — logos interface et emails"
       />
 
       <SectionBlock title="Organisation VSCG" countLabel="Configuration globale">

@@ -33,7 +33,7 @@ export async function POST(req: Request) {
   const code = await createOtp(user.id);
 
   try {
-    await sendOtpEmail(email, code);
+    await sendOtpEmail(email, code, req);
   } catch (error) {
     console.error("[send-otp] email failed:", error);
     return NextResponse.json({ error: "email_failed" }, { status: 500 });

@@ -200,7 +200,7 @@ export function TrainingFeedView({
           />
         </div>
 
-      <div className="space-y-3 lg:hidden">
+      <div className="mt-8 space-y-3 lg:hidden">
           <FeedMobileDocuments trainingId={trainingId} posts={posts} showEmpty />
           <FeedSessionsPanel
             trainingId={trainingId}

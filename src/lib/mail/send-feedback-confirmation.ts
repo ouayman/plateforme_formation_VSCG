@@ -1,19 +1,22 @@
 import { renderFeedbackConfirmationEmail } from "@/emails/feedback-confirmation";
 import { APP_NAME } from "@/lib/constants";
 import { sendEmail } from "@/lib/email";
+import { getEmailBranding } from "@/lib/mail/email-branding";
 
 export async function sendFeedbackConfirmationEmail(
   to: string,
   firstName: string,
   trainingTitle: string,
-  rating: number
+  rating: number,
+  req?: Pick<Request, "headers">
 ) {
-  const appUrl = process.env.APP_URL || "http://localhost:3000";
+  const { logoUrl, organizationName } = await getEmailBranding(req);
   const html = renderFeedbackConfirmationEmail({
     firstName,
     trainingTitle,
     rating,
-    appUrl,
+    logoUrl,
+    organizationName,
   });
 
   await sendEmail({

@@ -1,4 +1,3 @@
-import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { UserType } from "@prisma/client";
 import { loadDashboardShellData } from "@/lib/dashboard-layout-context";
@@ -8,8 +7,6 @@ import {
   runWithPrismaInstrumentationAsync,
 } from "@/lib/prisma-instrumentation";
 import { DashboardShell } from "@/components/layout/dashboard-shell";
-import DashboardLoading from "@/app/(dashboard)/loading";
-
 export const dynamic = "force-dynamic";
 
 export default async function DashboardLayout({
@@ -47,8 +44,9 @@ export default async function DashboardLayout({
       headerLogoAlt={user.company.name}
       companyOptions={ctx.companyOptions}
       activeCompanyId={ctx.activeCompanyId}
+      canManageClientCompany={ctx.canManageClientCompany}
     >
-      <Suspense fallback={<DashboardLoading />}>{children}</Suspense>
+      {children}
     </DashboardShell>
   );
 }

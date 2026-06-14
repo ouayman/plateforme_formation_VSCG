@@ -1,8 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { ChevronDown, type LucideIcon } from "lucide-react";
-import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
 type FeedSidebarSectionProps = {
@@ -16,6 +15,12 @@ type FeedSidebarSectionProps = {
   children?: ReactNode;
   id?: string;
 };
+
+function hasRenderableContent(node: ReactNode): boolean {
+  if (node == null || node === false) return false;
+  if (Array.isArray(node)) return node.some(hasRenderableContent);
+  return true;
+}
 
 function SectionCountTag({ count }: { count: number }) {
   return (
@@ -37,7 +42,7 @@ export function FeedSidebarSection({
   id,
 }: FeedSidebarSectionProps) {
   const [open, setOpen] = useState(defaultOpen);
-  const isEmpty = !children || (Array.isArray(children) && children.length === 0);
+  const isEmpty = !hasRenderableContent(children);
   const isOpen = !collapsible || open;
 
   const titleBlock = (

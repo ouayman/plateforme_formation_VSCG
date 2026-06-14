@@ -1,5 +1,4 @@
 import { APP_NAME, COLORS } from "@/lib/constants";
-import { resolveMediaUrl } from "@/lib/media-url";
 
 type WelcomeEmailProps = {
   firstName: string;
@@ -14,8 +13,6 @@ export function renderWelcomeEmail({
   logoUrl,
   organizationName,
 }: WelcomeEmailProps) {
-  const logoSrc = logoUrl.startsWith("http") ? logoUrl : `${loginUrl.replace(/\/login$/, "")}${resolveMediaUrl(logoUrl)}`;
-
   return `<!DOCTYPE html>
 <html lang="fr">
 <head><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /></head>
@@ -24,7 +21,7 @@ export function renderWelcomeEmail({
     <tr><td align="center">
       <table width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;background:#ffffff;border-radius:24px;overflow:hidden;box-shadow:0 8px 40px rgba(0,0,0,0.08);">
         <tr><td style="padding:40px 32px 24px;text-align:center;">
-          <img src="${logoSrc}" alt="${organizationName}" height="48" style="display:block;margin:0 auto 20px;max-width:240px;height:auto;" />
+          <img src="${logoUrl}" alt="${organizationName}" height="48" style="display:block;margin:0 auto 20px;max-width:240px;height:auto;" />
           <h1 style="margin:0 0 8px;font-size:24px;font-weight:700;color:${COLORS.secondary};">Bienvenue ${firstName} !</h1>
           <p style="margin:0;font-size:15px;line-height:1.6;color:#64748b;">Votre compte sur la plateforme ${APP_NAME} a été créé. Connectez-vous pour accéder à vos formations.</p>
         </td></tr>

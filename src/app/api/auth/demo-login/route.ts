@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { isDemoMode } from "@/lib/demo-mode";
+import { resolveLandingPath } from "@/lib/auth/landing";
 import { createSession } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
 
@@ -40,5 +41,7 @@ export async function POST(req: Request) {
 
   await createSession({ userId: user.id, email: user.email });
 
-  return NextResponse.json({ ok: true });
+  const redirectTo = await resolveLandingPath(user.id);
+
+  return NextResponse.json({ ok: true, redirectTo });
 }

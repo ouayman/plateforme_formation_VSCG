@@ -89,7 +89,7 @@ export async function POST(req: Request) {
   invalidateTrainersListCache();
 
   try {
-    await sendWelcomeEmail(user.email, user.firstName);
+    await sendWelcomeEmail(user.email, user.firstName, req);
   } catch (err) {
     console.error("[Welcome] Failed to send email:", err);
   }

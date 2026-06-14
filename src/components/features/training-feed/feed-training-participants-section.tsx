@@ -1,12 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { UserPlus, UserMinus } from "lucide-react";
+import { UserPlus } from "lucide-react";
 import { FeedParticipantsAdminPanel } from "@/components/features/training-feed/feed-certificate-panel";
 import { FeedSidebarSection } from "@/components/features/training-feed/feed-sidebar-section";
 import { useTrainingFeed } from "@/components/features/training-feed/training-feed-context";
 import { Users } from "lucide-react";
-
 type FeedTrainingParticipantsSectionProps = {
   trainingId: string;
   canManage: boolean;
@@ -128,17 +127,6 @@ export function FeedTrainingParticipantsSection({
         </FeedSidebarSection>
       )}
 
-      {canManage && certificates.length === 0 && availableParticipants.length === 0 && (
-        <FeedSidebarSection
-          icon={UserMinus}
-          title="Référentiel programme"
-          empty={{
-            icon: Users,
-            message:
-              "Aucun participant dans le programme.\nAjoutez des participants depuis la fiche programme.",
-          }}
-        />
-      )}
     </>
   );
 }

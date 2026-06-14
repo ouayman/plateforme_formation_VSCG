@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
+import { resolveLandingPath } from "@/lib/auth/landing";
 import { completeSignIn } from "@/lib/auth/sign-in";
 import { verifyOtp } from "@/lib/auth/otp";
 import { prisma } from "@/lib/prisma";
@@ -32,5 +33,7 @@ export async function POST(req: Request) {
 
   await completeSignIn(user.id, user.email);
 
-  return NextResponse.json({ ok: true });
+  const redirectTo = await resolveLandingPath(user.id);
+
+  return NextResponse.json({ ok: true, redirectTo });
 }

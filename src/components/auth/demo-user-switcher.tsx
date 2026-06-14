@@ -13,6 +13,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { staffRoutes } from "@/lib/routes";
 
 export type DemoUser = {
   id: string;
@@ -121,8 +122,10 @@ export function DemoUserSwitcher({ variant = "topbar" }: DemoUserSwitcherProps) 
       return;
     }
 
+    const data = (await res.json()) as { redirectTo?: string };
+
     setOpen(false);
-    router.push("/dashboard");
+    router.push(data.redirectTo ?? staffRoutes.home);
     refreshCurrentPath();
   }
 

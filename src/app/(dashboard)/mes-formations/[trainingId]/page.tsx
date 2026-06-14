@@ -5,5 +5,5 @@ export default function MesFormationDetailRedirect({
 }: {
   params: { trainingId: string };
 }) {
-  redirect(`/my-trainings/${params.trainingId}`);
+  redirect(`/trainings/${params.trainingId}`);
 }

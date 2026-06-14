@@ -10,7 +10,7 @@ const projectListSelect = {
   startDate: true,
   endDate: true,
   deletedAt: true,
-  company: { select: { name: true } },
+  company: { select: { name: true, logoUrl: true } },
   _count: { select: { programs: true } },
 } as const;
 
@@ -46,7 +46,7 @@ export function serializeProjectListItem(project: {
   startDate: Date;
   endDate: Date;
   deletedAt: Date | null;
-  company: { name: string };
+  company: { name: string; logoUrl: string | null };
   _count: { programs: number };
 }) {
   return {

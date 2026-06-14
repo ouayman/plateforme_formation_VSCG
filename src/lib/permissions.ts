@@ -445,3 +445,34 @@ export function hasCoordinatorRoleOnProject(
     (r) => r.projectId === projectId && r.role === ProjectRole.COORDINATOR
   );
 }
+
+/** Coordinateur client — gestion de l'entreprise active (nom, logo). */
+export async function canManageClientCompany(
+  userId: string,
+  companyId: string,
+  perms?: UserPermissions
+) {
+  const p = perms ?? (await getUserPermissions(userId));
+  if (p.isInternal || isStaff(p)) return false;
+
+  const isCoordinator = p.projectRoles.some((r) => r.role === ProjectRole.COORDINATOR);
+  if (!isCoordinator) return false;
+
+  const { getActiveCompanyId, getUserCompanyOptions } = await import("@/lib/active-company");
+  const activeCompanyId = await getActiveCompanyId(userId);
+  if (activeCompanyId !== companyId) return false;
+
+  const options = await getUserCompanyOptions(userId);
+  if (!options.some((o) => o.id === companyId)) return false;
+
+  const role = await prisma.userProjectRole.findFirst({
+    where: {
+      userId,
+      role: ProjectRole.COORDINATOR,
+      project: { companyId, deletedAt: null },
+    },
+    select: { id: true },
+  });
+
+  return !!role;
+}

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { getAppUrl } from "@/lib/app-url";
 import { canSendOtp } from "@/lib/auth/otp";
 import { createPasswordResetToken } from "@/lib/auth/password-reset";
 import { sendPasswordResetEmail } from "@/lib/mail/send-password-reset";
@@ -33,10 +34,10 @@ export async function POST(req: Request) {
 
   try {
     const token = await createPasswordResetToken(user.id);
-    const appUrl = process.env.APP_URL || "http://localhost:3000";
+    const appUrl = getAppUrl(req);
     const resetUrl = `${appUrl}/reset-password?token=${encodeURIComponent(token)}`;
 
-    await sendPasswordResetEmail(user.email, resetUrl, user.firstName);
+    await sendPasswordResetEmail(user.email, resetUrl, user.firstName, req);
   } catch (error) {
     console.error("[forgot-password] email failed:", error);
     return NextResponse.json({ error: "email_failed" }, { status: 500 });

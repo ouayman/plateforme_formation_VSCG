@@ -10,7 +10,7 @@ export async function POST(req: Request) {
 
   const { searchParams } = new URL(req.url);
   const kind = searchParams.get("kind");
-  if (kind !== "dark" && kind !== "light") {
+  if (kind !== "dark" && kind !== "light" && kind !== "email") {
     return NextResponse.json({ error: "invalid_kind" }, { status: 400 });
   }
 

@@ -1,13 +1,12 @@
 import { redirect } from "next/navigation";
-import { CompanyType } from "@prisma/client";
 import { FolderKanban } from "lucide-react";
+import { redirectIfParticipantOnly } from "@/lib/auth/participant-guard";
 import { requireAuth } from "@/lib/auth/require";
 import {
   loadProjectsPageData,
   serializeProjectListItem,
 } from "@/lib/loaders/projects-list";
-import { isParticipantOnly, isStaff, resolveParticipantOnlyFast } from "@/lib/permissions";
-import { participantRoutes } from "@/lib/routes";
+import { isStaff } from "@/lib/permissions";
 import { PageHeader } from "@/components/layout/page-header";
 import { SetBreadcrumb } from "@/components/layout/breadcrumb-context";
 import { LazyProjectFormModal as ProjectFormModal } from "@/components/features/projects/lazy-modals";
@@ -16,12 +15,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 
 export default async function ProjectsPage() {
   const user = await requireAuth();
-  const participantFast = resolveParticipantOnlyFast(user.permissions);
-  if (participantFast === true) redirect(participantRoutes.trainings);
-  if (participantFast === null && (await isParticipantOnly(user.id, user.permissions))) {
-    redirect(participantRoutes.trainings);
-  }
-
+  await redirectIfParticipantOnly(user);
   const canEdit = isStaff(user.permissions);
 
   const [activeProjects, deletedProjects, clientCompanies] = await loadProjectsPageData(
@@ -51,7 +45,11 @@ export default async function ProjectsPage() {
         <EmptyState
           icon={FolderKanban}
           title="Aucun projet"
-          description="Créez votre première mission de formation."
+          description={
+            canEdit
+              ? "Créez votre première mission de formation."
+              : "Aucun projet accessible pour le moment."
+          }
         />
       ) : (
         <ProjectsList

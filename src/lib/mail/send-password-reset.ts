@@ -1,14 +1,21 @@
 import { renderPasswordResetEmail } from "@/emails/password-reset";
 import { APP_NAME } from "@/lib/constants";
 import { sendEmail } from "@/lib/email";
+import { getEmailBranding } from "@/lib/mail/email-branding";
 
 export async function sendPasswordResetEmail(
   to: string,
   resetUrl: string,
-  firstName?: string
+  firstName?: string,
+  req?: Pick<Request, "headers">
 ) {
-  const appUrl = process.env.APP_URL || "http://localhost:3000";
-  const html = renderPasswordResetEmail({ resetUrl, appUrl, firstName });
+  const { logoUrl, organizationName } = await getEmailBranding(req);
+  const html = renderPasswordResetEmail({
+    resetUrl,
+    logoUrl,
+    organizationName,
+    firstName,
+  });
 
   await sendEmail({
     to,

@@ -10,6 +10,7 @@ export type PlatformSettingsData = {
   organizationName: string;
   logoDarkUrl: string;
   logoLightUrl: string;
+  logoEmailUrl: string | null;
   welcomeSignatory: string;
 };
 
@@ -17,6 +18,7 @@ const DEFAULT_SETTINGS: PlatformSettingsData = {
   organizationName: "Value Stream Consulting",
   logoDarkUrl: BRANDING.DEFAULT_LOGO_DARK,
   logoLightUrl: BRANDING.DEFAULT_LOGO_LIGHT,
+  logoEmailUrl: null,
   welcomeSignatory: "L'équipe VSCG",
 };
 
@@ -28,6 +30,7 @@ const loadPlatformSettingsFromDb = unstable_cache(
       organizationName: row.organizationName,
       logoDarkUrl: row.logoDarkUrl || DEFAULT_SETTINGS.logoDarkUrl,
       logoLightUrl: row.logoLightUrl || DEFAULT_SETTINGS.logoLightUrl,
+      logoEmailUrl: row.logoEmailUrl,
       welcomeSignatory: row.welcomeSignatory || DEFAULT_SETTINGS.welcomeSignatory,
     };
   },
@@ -67,6 +70,7 @@ export async function ensurePlatformBootstrap() {
         organizationName: internal.name,
         logoDarkUrl: internal.logoUrl ?? DEFAULT_SETTINGS.logoDarkUrl,
         logoLightUrl: DEFAULT_SETTINGS.logoLightUrl,
+        logoEmailUrl: null,
         welcomeSignatory: DEFAULT_SETTINGS.welcomeSignatory,
       },
     });
@@ -94,12 +98,14 @@ export async function updatePlatformSettings(data: PlatformSettingsData) {
       organizationName: data.organizationName,
       logoDarkUrl: data.logoDarkUrl,
       logoLightUrl: data.logoLightUrl,
+      logoEmailUrl: data.logoEmailUrl,
       welcomeSignatory: data.welcomeSignatory,
     },
     update: {
       organizationName: data.organizationName,
       logoDarkUrl: data.logoDarkUrl,
       logoLightUrl: data.logoLightUrl,
+      logoEmailUrl: data.logoEmailUrl,
       welcomeSignatory: data.welcomeSignatory,
     },
   }).then((result) => {
@@ -110,15 +116,22 @@ export async function updatePlatformSettings(data: PlatformSettingsData) {
 }
 
 export async function updatePlatformBrandImage(
-  kind: "dark" | "light",
+  kind: "dark" | "light" | "email",
   storedPath: string
 ): Promise<PlatformSettingsData> {
   const current = await getPlatformSettings();
-  const previousPath = kind === "dark" ? current.logoDarkUrl : current.logoLightUrl;
+  const previousPath =
+    kind === "dark"
+      ? current.logoDarkUrl
+      : kind === "light"
+        ? current.logoLightUrl
+        : current.logoEmailUrl;
   const next =
     kind === "dark"
       ? { ...current, logoDarkUrl: storedPath }
-      : { ...current, logoLightUrl: storedPath };
+      : kind === "light"
+        ? { ...current, logoLightUrl: storedPath }
+        : { ...current, logoEmailUrl: storedPath };
   await updatePlatformSettings(next);
   if (previousPath && previousPath !== storedPath) {
     await safeDeleteStoredFile(previousPath);

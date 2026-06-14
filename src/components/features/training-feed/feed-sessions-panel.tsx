@@ -98,7 +98,7 @@ export function FeedSessionsPanel({
         collapsible={collapsible}
         empty={{
           icon: Calendar,
-          message: "Aucune session planifiée pour le moment.",
+          message: "Les sessions de cette formation seront prochainement programmées.",
         }}
       >
         {visibleSessions.length > 0 && (

@@ -24,7 +24,7 @@ type TrainingCardRow = {
 
 type ProgramDetailTabsProps = {
   programId: string;
-  canEditStaff: boolean;
+  canEditStructure: boolean;
   canManageParticipants: boolean;
   canViewAllFeedbacks: boolean;
   trainings: TrainingCardRow[];
@@ -37,7 +37,7 @@ type ProgramDetailTabsProps = {
 
 export function ProgramDetailTabs({
   programId,
-  canEditStaff,
+  canEditStructure,
   canManageParticipants,
   canViewAllFeedbacks,
   trainings,
@@ -90,7 +90,7 @@ export function ProgramDetailTabs({
           variant="plain"
           countLabel={countLabel(trainings.length, "formation", "formations")}
           action={
-            canEditStaff ? (
+            canEditStructure ? (
               <TrainingFormModal programId={programId} nextOrderIndex={nextOrder} />
             ) : undefined
           }
@@ -102,7 +102,7 @@ export function ProgramDetailTabs({
               description="Ajoutez les modules de formation."
             />
           ) : (
-            <TrainingCards programId={programId} trainings={trainings} canEdit={canEditStaff} />
+            <TrainingCards programId={programId} trainings={trainings} canEdit={canEditStructure} />
           )}
         </SectionBlock>
       </TabsContent>

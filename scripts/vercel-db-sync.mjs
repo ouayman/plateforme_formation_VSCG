@@ -93,7 +93,23 @@ async function syncPasswordAuthSchema() {
   console.log("[vercel-db-sync] Password auth schema OK");
 }
 
-syncPasswordAuthSchema()
+async function syncPlatformSettingsSchema() {
+  if (!(await columnExists("platform_settings", "logo_email_url"))) {
+    await prisma.$executeRawUnsafe(
+      `ALTER TABLE "platform_settings" ADD COLUMN "logo_email_url" TEXT`
+    );
+    console.log("[vercel-db-sync] Added platform_settings.logo_email_url");
+  } else {
+    console.log("[vercel-db-sync] platform_settings.logo_email_url already exists");
+  }
+}
+
+async function main() {
+  await syncPasswordAuthSchema();
+  await syncPlatformSettingsSchema();
+}
+
+main()
   .catch((error) => {
     console.error("[vercel-db-sync] Failed:", error);
     process.exit(1);

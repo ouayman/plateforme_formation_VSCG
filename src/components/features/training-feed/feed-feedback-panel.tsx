@@ -13,6 +13,9 @@ type FeedFeedbackPanelProps = {
   embedded?: boolean;
 };
 
+const FEEDBACK_LOCKED_MESSAGE =
+  "Vous pourrez soumettre un avis sur cette formation à partir de votre première session.";
+
 export function FeedFeedbackPanel({
   trainingId,
   myFeedback,
@@ -41,54 +44,59 @@ export function FeedFeedbackPanel({
     refresh(`/trainings/${trainingId}`);
   }
 
+  if (!canSubmit) {
+    return (
+      <FeedSidebarSection
+        icon={MessageSquareHeart}
+        title="Votre avis"
+        empty={{
+          icon: MessageSquareHeart,
+          message: FEEDBACK_LOCKED_MESSAGE,
+        }}
+      />
+    );
+  }
+
   const form = (
     <div id="feed-feedback" className="scroll-mt-24 px-4 py-4 sm:px-5">
-      {!canSubmit ? (
-        <p className="text-[12px] text-muted-foreground">
-          Votre avis sera disponible après votre première présence à une session.
-        </p>
-      ) : (
-        <>
-          <p className="text-[12px] text-muted-foreground">
-            {saved
-              ? "Merci pour votre retour — vous pouvez le modifier à tout moment."
-              : "Partagez votre expérience sur cette formation."}
-          </p>
+      <p className="text-[12px] text-muted-foreground">
+        {saved
+          ? "Merci pour votre retour — vous pouvez le modifier à tout moment."
+          : "Partagez votre expérience sur cette formation."}
+      </p>
 
-          <div className="mt-3 flex gap-1">
-            {[1, 2, 3, 4, 5].map((star) => (
-              <button
-                key={star}
-                type="button"
-                onClick={() => setRating(star)}
-                className={cn(
-                  "rounded p-0.5 transition hover:scale-110",
-                  star <= rating ? "text-amber-500" : "text-muted-foreground/30"
-                )}
-              >
-                <Star className={cn("h-5 w-5", star <= rating && "fill-current")} />
-              </button>
-            ))}
-          </div>
-
-          <textarea
-            value={comment}
-            onChange={(e) => setComment(e.target.value)}
-            placeholder="Commentaire (optionnel)"
-            rows={2}
-            className="mt-3 w-full resize-none rounded-lg bg-black/[0.03] px-3 py-2 text-[13px] outline-none ring-1 ring-transparent focus:ring-[#CD3465]/20"
-          />
-
+      <div className="mt-3 flex gap-1">
+        {[1, 2, 3, 4, 5].map((star) => (
           <button
+            key={star}
             type="button"
-            disabled={rating < 1 || loading}
-            onClick={handleSubmit}
-            className="mt-3 w-full rounded-full bg-[#CD3465] py-2 text-[13px] font-semibold text-white transition hover:bg-[#b82d58] disabled:opacity-40"
+            onClick={() => setRating(star)}
+            className={cn(
+              "rounded p-0.5 transition hover:scale-110",
+              star <= rating ? "text-amber-500" : "text-muted-foreground/30"
+            )}
           >
-            {loading ? "Envoi..." : saved ? "Mettre à jour" : "Envoyer mon avis"}
+            <Star className={cn("h-5 w-5", star <= rating && "fill-current")} />
           </button>
-        </>
-      )}
+        ))}
+      </div>
+
+      <textarea
+        value={comment}
+        onChange={(e) => setComment(e.target.value)}
+        placeholder="Commentaire (optionnel)"
+        rows={2}
+        className="mt-3 w-full resize-none rounded-lg bg-black/[0.03] px-3 py-2 text-[13px] outline-none ring-1 ring-transparent focus:ring-[#CD3465]/20"
+      />
+
+      <button
+        type="button"
+        disabled={rating < 1 || loading}
+        onClick={handleSubmit}
+        className="mt-3 w-full rounded-full bg-[#CD3465] py-2 text-[13px] font-semibold text-white transition hover:bg-[#b82d58] disabled:opacity-40"
+      >
+        {loading ? "Envoi..." : saved ? "Mettre à jour" : "Envoyer mon avis"}
+      </button>
     </div>
   );
 

@@ -5,8 +5,9 @@ import { usePathname } from "next/navigation";
 import { Sidebar } from "@/components/layout/sidebar";
 import { Topbar } from "@/components/layout/topbar";
 import { BreadcrumbProvider } from "@/components/layout/breadcrumb-context";
+import { NavigationPendingContent } from "@/components/layout/navigation-pending-content";
 import { NavigationProgress } from "@/components/layout/navigation-progress";
-import { participantRoutes } from "@/lib/routes";
+import { participantRoutes, staffRoutes } from "@/lib/routes";
 
 type CompanyOption = { id: string; name: string };
 
@@ -28,6 +29,7 @@ type DashboardShellProps = {
   headerLogoAlt: string;
   companyOptions?: CompanyOption[];
   activeCompanyId?: string | null;
+  canManageClientCompany?: boolean;
 };
 
 export function DashboardShell({
@@ -48,6 +50,7 @@ export function DashboardShell({
   headerLogoAlt,
   companyOptions = [],
   activeCompanyId = null,
+  canManageClientCompany = false,
 }: DashboardShellProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const pathname = usePathname();
@@ -77,6 +80,7 @@ export function DashboardShell({
     userAvatarUrl,
     companyOptions,
     activeCompanyId,
+    canManageClientCompany,
   };
 
   return (
@@ -112,12 +116,14 @@ export function DashboardShell({
             demoMode={demoMode}
             headerLogoUrl={headerLogoUrl}
             headerLogoAlt={headerLogoAlt}
-            homeHref={isParticipantOnly ? participantRoutes.trainings : "/dashboard"}
+            homeHref={isParticipantOnly ? participantRoutes.trainings : staffRoutes.home}
             isParticipantOnly={isParticipantOnly}
             onMenuClick={() => setMobileOpen(true)}
           />
           <main className="main-scroll flex-1 overflow-y-auto overflow-x-hidden bg-[#f5f5f7] p-4 sm:p-6 md:p-8">
-            <div className="page-shell">{children}</div>
+            <div className="page-shell">
+              <NavigationPendingContent>{children}</NavigationPendingContent>
+            </div>
           </main>
         </div>
       </div>

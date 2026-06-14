@@ -37,7 +37,10 @@ export const AVATAR_UPLOAD = {
   OUTPUT_QUALITY: 82,
 } as const;
 
+export const APP_FAVICON = "/favicon.ico";
+
 export const BRANDING = {
+  APP_FAVICON,
   DEFAULT_FAVICON: "/branding/vscg-icon.png",
   DEFAULT_LOGO_DARK: "/branding/vscg-logo-dark.png",
   DEFAULT_LOGO_LIGHT: "/branding/vscg-icon.png",

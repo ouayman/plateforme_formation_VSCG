@@ -3,7 +3,6 @@ import type { NextRequest } from "next/server";
 import { SESSION_COOKIE } from "@/lib/constants";
 
 const protectedPaths = [
-  "/dashboard",
   "/projects",
   "/trainings",
   "/sessions",
@@ -11,10 +10,16 @@ const protectedPaths = [
   "/my-trainings",
   "/mes-formations",
   "/admin",
+  "/account",
 ];
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+
+  if (pathname === "/dashboard" || pathname.startsWith("/dashboard/")) {
+    return NextResponse.redirect(new URL("/", request.url));
+  }
+
   const isProtected = protectedPaths.some(
     (p) => pathname === p || pathname.startsWith(`${p}/`)
   );
@@ -33,6 +38,7 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
+    "/dashboard",
     "/dashboard/:path*",
     "/projects/:path*",
     "/trainings/:path*",
@@ -41,5 +47,6 @@ export const config = {
     "/my-trainings/:path*",
     "/mes-formations/:path*",
     "/admin/:path*",
+    "/account/:path*",
   ],
 };

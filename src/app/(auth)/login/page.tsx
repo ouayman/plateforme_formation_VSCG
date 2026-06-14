@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { resolveLandingPathFromUser } from "@/lib/auth/landing";
 import { getCurrentUser } from "@/lib/auth/get-current-user";
 import { getSession } from "@/lib/auth/session";
 import { isDemoMode } from "@/lib/demo-mode";
@@ -7,7 +8,7 @@ import { LoginForm } from "@/components/auth/login-form";
 
 export default async function LoginPage() {
   const user = await getCurrentUser();
-  if (user) redirect("/dashboard");
+  if (user) redirect(await resolveLandingPathFromUser(user));
 
   const session = await getSession();
   if (session) redirect("/api/auth/clear-session");
