@@ -20,7 +20,15 @@ npm run db:migrate
 npm run db:migrate:deploy
 ```
 
-Le build Vercel (`vercel-build`) exécute `prisma migrate deploy` automatiquement.
+Si la prod a été créée avec `db push`, baseline d’abord les migrations déjà en place :
+
+```bash
+npx prisma migrate resolve --applied 20250612000000_init
+npx prisma migrate resolve --applied 20250613000000_perf_indexes
+npm run db:migrate:deploy
+```
+
+Le build Vercel (`vercel-build`) exécute `scripts/vercel-db-sync.mjs` (schéma auth mot de passe idempotent) — **pas** `migrate deploy`, car la prod Neon n’est pas baselinée sur l’historique Prisma Migrate.
 
 ## Index perf (20250613000000_perf_indexes)
 
