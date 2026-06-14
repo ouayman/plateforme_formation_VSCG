@@ -13,17 +13,22 @@ export async function POST(req: Request) {
 
   const email = parsed.data.email.toLowerCase();
 
-  const user = await prisma.user.findUnique({
-    where: { email },
-    select: { passwordHash: true },
-  });
+  try {
+    const user = await prisma.user.findUnique({
+      where: { email },
+      select: { passwordHash: true },
+    });
 
-  if (!user) {
-    return NextResponse.json({ error: "not_invited" }, { status: 404 });
+    if (!user) {
+      return NextResponse.json({ error: "not_invited" }, { status: 404 });
+    }
+
+    return NextResponse.json({
+      ok: true,
+      hasPassword: Boolean(user.passwordHash),
+    });
+  } catch (error) {
+    console.error("[identify] database error:", error);
+    return NextResponse.json({ error: "server_error" }, { status: 500 });
   }
-
-  return NextResponse.json({
-    ok: true,
-    hasPassword: Boolean(user.passwordHash),
-  });
 }
