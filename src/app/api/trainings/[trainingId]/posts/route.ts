@@ -106,18 +106,23 @@ export async function POST(
   });
 
   const attachments = [];
-  for (const file of files) {
-    const attachmentId = crypto.randomUUID();
-    const fileUrl = await savePostAttachment(params.trainingId, attachmentId, file);
-    const attachment = await prisma.trainingPostAttachment.create({
-      data: {
-        id: attachmentId,
-        postId: post.id,
-        fileUrl,
-        fileName: file.name,
-      },
-    });
-    attachments.push(attachment);
+  try {
+    for (const file of files) {
+      const attachmentId = crypto.randomUUID();
+      const fileUrl = await savePostAttachment(params.trainingId, attachmentId, file);
+      const attachment = await prisma.trainingPostAttachment.create({
+        data: {
+          id: attachmentId,
+          postId: post.id,
+          fileUrl,
+          fileName: file.name,
+        },
+      });
+      attachments.push(attachment);
+    }
+  } catch {
+    await prisma.trainingPost.delete({ where: { id: post.id } }).catch(() => {});
+    return NextResponse.json({ error: "upload_failed" }, { status: 500 });
   }
 
   return NextResponse.json(

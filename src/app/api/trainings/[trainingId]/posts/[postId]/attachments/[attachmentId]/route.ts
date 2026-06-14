@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth/get-current-user";
 import { prisma } from "@/lib/prisma";
 import { canAccessTrainingAsParticipant } from "@/lib/permissions";
-import { resolveStoredPath } from "@/lib/uploads";
+import { readStoredFile } from "@/lib/uploads";
 import { displayFileName } from "@/lib/upload-utils";
 import { isStaffFeedViewer, trainingPostVisibilityFilter } from "@/lib/training-feed";
 
@@ -34,18 +34,17 @@ export async function GET(
 
   if (!attachment) return NextResponse.json({ error: "not_found" }, { status: 404 });
 
-  try {
-    const absolutePath = resolveStoredPath(attachment.fileUrl);
-    const buffer = await import("fs/promises").then((fs) => fs.readFile(absolutePath));
-    const fileName = attachment.fileName ?? displayFileName(attachment.fileUrl);
-
-    return new NextResponse(buffer, {
-      headers: {
-        "Content-Type": "application/octet-stream",
-        "Content-Disposition": `attachment; filename="${fileName.replace(/"/g, "")}"`,
-      },
-    });
-  } catch {
+  const file = await readStoredFile(attachment.fileUrl);
+  if (!file) {
     return NextResponse.json({ error: "not_found" }, { status: 404 });
   }
+
+  const fileName = attachment.fileName ?? displayFileName(attachment.fileUrl);
+
+  return new NextResponse(file.body, {
+    headers: {
+      "Content-Type": file.contentType || "application/octet-stream",
+      "Content-Disposition": `attachment; filename="${fileName.replace(/"/g, "")}"`,
+    },
+  });
 }

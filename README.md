@@ -49,7 +49,7 @@ Voir [docs/COMMANDS.md](docs/COMMANDS.md)
 
 ## Production
 
-- Port exposé : **3000** (reverse proxy / Plesk → HTTPS)
-- BDD persistante : volume Docker `postgres_data`
-- Fichiers uploadés : volume Docker `uploads_data`
+- **Vercel** : fichiers via Blob store (private, proxy `/api/media` et routes métier). Local : `vercel env pull` → `BLOB_READ_WRITE_TOKEN`. Préfixe store : `STORAGE_ENV` ou `VERCEL_ENV`.
+- **Docker** : port **3000**, volume `uploads_data`, backend disque local automatique si pas de token Blob.
+- BDD persistante : volume Docker `postgres_data` ou Neon sur Vercel
 - Prisma Studio : ponctuel uniquement, jamais exposé publiquement

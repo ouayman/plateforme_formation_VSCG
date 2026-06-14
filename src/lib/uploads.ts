@@ -1,28 +1,29 @@
 import "server-only";
 
-import fs from "fs/promises";
 import path from "path";
 import { randomUUID } from "crypto";
 import { getExtension } from "@/lib/upload-utils";
-import { processAvatarImage } from "@/lib/avatar-image";
+import { storage } from "@/lib/storage";
+import { contentTypeForKey, isSafeMediaPath, normalizeLogicalKey } from "@/lib/storage/keys";
 
+/** @deprecated Préférer storage — conservé pour compat Docker / scripts. */
 export const UPLOAD_ROOT = path.join(process.cwd(), "uploads");
+
+export { isSafeMediaPath, normalizeLogicalKey };
 
 export async function savePostAttachment(
   trainingId: string,
   attachmentId: string,
   file: File
 ): Promise<string> {
-  const dir = path.join(UPLOAD_ROOT, "trainings", trainingId, "posts");
-  await fs.mkdir(dir, { recursive: true });
-
   const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
   const storedName = `${attachmentId}_${safeName}`;
-  const absolutePath = path.join(dir, storedName);
+  const logicalKey = path.join("trainings", trainingId, "posts", storedName).replace(/\\/g, "/");
   const buffer = Buffer.from(await file.arrayBuffer());
-  await fs.writeFile(absolutePath, buffer);
-
-  return path.join("trainings", trainingId, "posts", storedName).replace(/\\/g, "/");
+  await storage.put(logicalKey, buffer, {
+    contentType: contentTypeForKey(logicalKey, "application/octet-stream"),
+  });
+  return logicalKey;
 }
 
 export async function savePlatformBrandImage(
@@ -30,34 +31,35 @@ export async function savePlatformBrandImage(
   file: File
 ): Promise<string> {
   const ext = getExtension(file.name) || ".png";
-  const relativePath = path.join("branding", "platform", `${kind}${ext}`);
-  const absolutePath = path.join(UPLOAD_ROOT, relativePath);
-  await fs.mkdir(path.dirname(absolutePath), { recursive: true });
+  const logicalKey = path.join("branding", "platform", `${kind}${ext}`).replace(/\\/g, "/");
   const buffer = Buffer.from(await file.arrayBuffer());
-  await fs.writeFile(absolutePath, buffer);
-  return relativePath.replace(/\\/g, "/");
+  await storage.put(logicalKey, buffer, {
+    contentType: contentTypeForKey(logicalKey),
+    allowOverwrite: true,
+  });
+  return logicalKey;
 }
 
 export async function saveUserAvatar(userId: string, file: File): Promise<string> {
   const buffer = Buffer.from(await file.arrayBuffer());
+  const { processAvatarImage } = await import("@/lib/avatar-image");
   const processed = await processAvatarImage(buffer);
-  const relativePath = path
+  const logicalKey = path
     .join("avatars", "users", userId, `${randomUUID()}.webp`)
     .replace(/\\/g, "/");
-  const absolutePath = path.join(UPLOAD_ROOT, relativePath);
-  await fs.mkdir(path.dirname(absolutePath), { recursive: true });
-  await fs.writeFile(absolutePath, processed);
-  return relativePath;
+  await storage.put(logicalKey, processed, { contentType: "image/webp" });
+  return logicalKey;
 }
 
 export async function saveCompanyLogo(companyId: string, file: File): Promise<string> {
   const ext = getExtension(file.name) || ".png";
-  const relativePath = path.join("branding", "companies", companyId, `logo${ext}`);
-  const absolutePath = path.join(UPLOAD_ROOT, relativePath);
-  await fs.mkdir(path.dirname(absolutePath), { recursive: true });
+  const logicalKey = path.join("branding", "companies", companyId, `logo${ext}`).replace(/\\/g, "/");
   const buffer = Buffer.from(await file.arrayBuffer());
-  await fs.writeFile(absolutePath, buffer);
-  return relativePath.replace(/\\/g, "/");
+  await storage.put(logicalKey, buffer, {
+    contentType: contentTypeForKey(logicalKey),
+    allowOverwrite: true,
+  });
+  return logicalKey;
 }
 
 export async function saveSignatorySignatureFromFile(projectId: string, file: File): Promise<string> {
@@ -72,35 +74,17 @@ export async function saveSignatorySignatureFromBuffer(
   ext: string
 ): Promise<string> {
   const safeExt = [".png", ".jpg", ".jpeg", ".webp"].includes(ext) ? ext : ".png";
-  const relativePath = path
+  const logicalKey = path
     .join("signatures", "projects", projectId, `${randomUUID()}${safeExt}`)
     .replace(/\\/g, "/");
-  const absolutePath = path.join(UPLOAD_ROOT, relativePath);
-  await fs.mkdir(path.dirname(absolutePath), { recursive: true });
-  await fs.writeFile(absolutePath, buffer);
-  return relativePath;
+  await storage.put(logicalKey, buffer, { contentType: contentTypeForKey(logicalKey) });
+  return logicalKey;
 }
 
-export async function deleteStoredFile(relativePath: string) {
-  try {
-    await fs.unlink(path.join(UPLOAD_ROOT, relativePath));
-  } catch {
-    // ignore missing files
-  }
+export async function deleteStoredFile(logicalKey: string) {
+  await storage.delete(logicalKey);
 }
 
-export function resolveStoredPath(relativePath: string) {
-  const absolute = path.join(UPLOAD_ROOT, relativePath);
-  const normalizedRoot = path.normalize(UPLOAD_ROOT);
-  const normalizedAbsolute = path.normalize(absolute);
-  if (!normalizedAbsolute.startsWith(normalizedRoot)) {
-    throw new Error("invalid_path");
-  }
-  return normalizedAbsolute;
-}
-
-export function isSafeMediaPath(relativePath: string) {
-  const normalized = relativePath.replace(/\\/g, "/");
-  if (normalized.includes("..") || normalized.includes("\0")) return false;
-  return normalized.startsWith("branding/") || normalized.startsWith("signatures/") || normalized.startsWith("avatars/");
+export async function readStoredFile(logicalKey: string) {
+  return storage.read(logicalKey);
 }

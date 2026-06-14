@@ -1,8 +1,12 @@
 /** @type {import('next').NextConfig} */
 import { watchOptionsForDev } from "./scripts/file-watcher-polling.mjs";
 
+const dockerBuild =
+  process.env.DOCKER_BUILD === "1" || process.env.DOCKER_BUILD === "true";
+
+/** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: "standalone",
+  ...(dockerBuild ? { output: "standalone" } : {}),
   poweredByHeader: false,
   compress: true,
   productionBrowserSourceMaps: false,
@@ -10,6 +14,7 @@ const nextConfig = {
   typescript: { ignoreBuildErrors: true },
   experimental: {
     webpackBuildWorker: false,
+    serverComponentsExternalPackages: ["sharp"],
   },
   webpack: (config, { dev }) => {
     if (!dev) {
