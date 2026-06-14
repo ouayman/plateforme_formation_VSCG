@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { requireAdminApi } from "@/lib/auth/require";
 import { validateImageUpload } from "@/lib/image-upload-utils";
 import { prisma } from "@/lib/prisma";
-import { saveCompanyLogo } from "@/lib/uploads";
+import { safeDeleteStoredFile, saveCompanyLogo } from "@/lib/uploads";
 
 export async function POST(
   req: Request,
@@ -33,8 +33,10 @@ export async function POST(
       where: { id: params.id },
       data: { logoUrl: storedPath },
     });
+    await safeDeleteStoredFile(company.logoUrl);
     return NextResponse.json({ path: storedPath, company: updated });
-  } catch {
+  } catch (error) {
+    console.error("[company-logo] upload failed:", error);
     return NextResponse.json({ error: "upload_failed" }, { status: 500 });
   }
 }

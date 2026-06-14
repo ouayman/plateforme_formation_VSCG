@@ -33,6 +33,7 @@ export function ImageUploadField({
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
+  const [cacheVersion, setCacheVersion] = useState(() => Date.now());
 
   async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -54,7 +55,9 @@ export function ImageUploadField({
     }
 
     const data = await res.json();
-    onUploaded(data.path);
+    const path = data.path as string;
+    setCacheVersion(Date.now());
+    onUploaded(path);
     if (inputRef.current) inputRef.current.value = "";
   }
 
@@ -69,7 +72,12 @@ export function ImageUploadField({
           )}
         >
           {value ? (
-            <OrgLogo logoUrl={value} alt={alt} variant={previewVariant} />
+            <OrgLogo
+              logoUrl={value}
+              alt={alt}
+              variant={previewVariant}
+              cacheVersion={cacheVersion}
+            />
           ) : (
             <span className="text-[12px] text-muted-foreground">Aucun logo</span>
           )}

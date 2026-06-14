@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/dialog";
 import { ProfileAvatarUpload } from "@/components/features/account/profile-avatar-upload";
 import { cn } from "@/lib/utils";
+import { PASSWORD } from "@/lib/constants";
 import {
   GLOBAL_ROLE_LABELS,
   type GlobalRoleValue,
@@ -93,6 +94,7 @@ export function UserEditModal({
     companyId: user.companyId,
     type: user.type,
     globalRoles: [...user.globalRoles],
+    newPassword: "",
   });
 
   function openModal() {
@@ -103,6 +105,7 @@ export function UserEditModal({
       companyId: user.companyId,
       type: user.type,
       globalRoles: [...user.globalRoles],
+      newPassword: "",
     });
     setError("");
     setOpen(true);
@@ -166,6 +169,24 @@ export function UserEditModal({
       };
       setError(messages[data.error] || "Erreur lors de la modification.");
       return;
+    }
+
+    if (form.newPassword.trim()) {
+      const pwRes = await fetch(`/api/users/${user.id}/password`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ newPassword: form.newPassword }),
+      });
+
+      if (!pwRes.ok) {
+        const data = await pwRes.json().catch(() => ({}));
+        setError(
+          data.error === "too_short"
+            ? `Le mot de passe doit contenir au moins ${PASSWORD.MIN_LENGTH} caractères.`
+            : "Profil mis à jour, mais erreur sur le mot de passe."
+        );
+        return;
+      }
     }
 
     setOpen(false);
@@ -306,6 +327,22 @@ export function UserEditModal({
               </div>
             </div>
           )}
+
+          <div className="space-y-2">
+            <Label htmlFor="edit-new-password">Nouveau mot de passe</Label>
+            <Input
+              id="edit-new-password"
+              type="password"
+              autoComplete="new-password"
+              placeholder={`Optionnel — min. ${PASSWORD.MIN_LENGTH} caractères`}
+              minLength={PASSWORD.MIN_LENGTH}
+              value={form.newPassword}
+              onChange={(e) => setForm({ ...form, newPassword: e.target.value })}
+            />
+            <p className="text-[12px] text-muted-foreground">
+              Laissez vide pour ne pas modifier le mot de passe.
+            </p>
+          </div>
 
           {error && <p className="text-sm text-destructive">{error}</p>}
           <DialogFooter>

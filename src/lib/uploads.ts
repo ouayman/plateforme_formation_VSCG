@@ -31,11 +31,12 @@ export async function savePlatformBrandImage(
   file: File
 ): Promise<string> {
   const ext = getExtension(file.name) || ".png";
-  const logicalKey = path.join("branding", "platform", `${kind}${ext}`).replace(/\\/g, "/");
+  const logicalKey = path
+    .join("branding", "platform", kind, `${randomUUID()}${ext}`)
+    .replace(/\\/g, "/");
   const buffer = Buffer.from(await file.arrayBuffer());
   await storage.put(logicalKey, buffer, {
     contentType: contentTypeForKey(logicalKey),
-    allowOverwrite: true,
   });
   return logicalKey;
 }
@@ -43,21 +44,22 @@ export async function savePlatformBrandImage(
 export async function saveUserAvatar(userId: string, file: File): Promise<string> {
   const buffer = Buffer.from(await file.arrayBuffer());
   const { processAvatarImage } = await import("@/lib/avatar-image");
-  const processed = await processAvatarImage(buffer);
+  const processed = await processAvatarImage(buffer, file.name);
   const logicalKey = path
-    .join("avatars", "users", userId, `${randomUUID()}.webp`)
+    .join("avatars", "users", userId, `${randomUUID()}${processed.extension}`)
     .replace(/\\/g, "/");
-  await storage.put(logicalKey, processed, { contentType: "image/webp" });
+  await storage.put(logicalKey, processed.buffer, { contentType: processed.contentType });
   return logicalKey;
 }
 
 export async function saveCompanyLogo(companyId: string, file: File): Promise<string> {
   const ext = getExtension(file.name) || ".png";
-  const logicalKey = path.join("branding", "companies", companyId, `logo${ext}`).replace(/\\/g, "/");
+  const logicalKey = path
+    .join("branding", "companies", companyId, `${randomUUID()}${ext}`)
+    .replace(/\\/g, "/");
   const buffer = Buffer.from(await file.arrayBuffer());
   await storage.put(logicalKey, buffer, {
     contentType: contentTypeForKey(logicalKey),
-    allowOverwrite: true,
   });
   return logicalKey;
 }
@@ -83,6 +85,24 @@ export async function saveSignatorySignatureFromBuffer(
 
 export async function deleteStoredFile(logicalKey: string) {
   await storage.delete(logicalKey);
+}
+
+/** Supprime un fichier stocké sans faire échouer l'opération (chemins legacy ignorés). */
+export async function safeDeleteStoredFile(storedPath: string | null | undefined) {
+  if (!storedPath) return;
+  if (
+    storedPath.startsWith("http://") ||
+    storedPath.startsWith("https://") ||
+    storedPath.startsWith("/")
+  ) {
+    return;
+  }
+
+  try {
+    await deleteStoredFile(storedPath);
+  } catch (error) {
+    console.error("[storage] delete failed:", storedPath, error);
+  }
 }
 
 export async function readStoredFile(logicalKey: string) {

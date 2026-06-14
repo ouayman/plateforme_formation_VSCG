@@ -2,6 +2,7 @@ import { CompanyType } from "@prisma/client";
 import { cache } from "react";
 import { revalidateTag, unstable_cache } from "next/cache";
 import { prisma } from "@/lib/prisma";
+import { safeDeleteStoredFile } from "@/lib/uploads";
 import { BRANDING } from "@/lib/constants";
 import { invalidatePlatformSettingsCache } from "@/lib/cache/platform-settings-cache";
 
@@ -113,11 +114,15 @@ export async function updatePlatformBrandImage(
   storedPath: string
 ): Promise<PlatformSettingsData> {
   const current = await getPlatformSettings();
+  const previousPath = kind === "dark" ? current.logoDarkUrl : current.logoLightUrl;
   const next =
     kind === "dark"
       ? { ...current, logoDarkUrl: storedPath }
       : { ...current, logoLightUrl: storedPath };
   await updatePlatformSettings(next);
+  if (previousPath && previousPath !== storedPath) {
+    await safeDeleteStoredFile(previousPath);
+  }
   revalidateTag("platform-settings");
   return next;
 }

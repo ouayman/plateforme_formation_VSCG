@@ -4,6 +4,7 @@ import { loadAccountPageData } from "@/lib/loaders/account";
 import { PageHeader } from "@/components/layout/page-header";
 import { SetBreadcrumb } from "@/components/layout/breadcrumb-context";
 import { AccountForm } from "@/components/features/account/account-form";
+import { AccountPasswordSection } from "@/components/features/account/account-password-section";
 import type { GlobalRoleValue } from "@/lib/user-roles";
 
 export default async function AccountPage() {
@@ -33,6 +34,8 @@ export default async function AccountPage() {
           projectRoles: fullUser.projectRoles.map((r) => ({ role: r.role })),
         }}
       />
+
+      <AccountPasswordSection hasPassword={Boolean(fullUser.passwordHash)} />
     </div>
   );
 }

@@ -23,10 +23,14 @@ export async function GET(
       ? file.contentType
       : imageContentType(filename);
 
+  const cacheControl = relativePath.startsWith("branding/")
+    ? "public, max-age=3600, stale-while-revalidate=86400"
+    : "public, max-age=86400, immutable";
+
   return new NextResponse(file.body, {
     headers: {
       "Content-Type": contentType,
-      "Cache-Control": "public, max-age=86400, immutable",
+      "Cache-Control": cacheControl,
     },
   });
 }

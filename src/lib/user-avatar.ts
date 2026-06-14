@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { validateAvatarUpload } from "@/lib/avatar-upload-utils";
-import { deleteStoredFile, saveUserAvatar } from "@/lib/uploads";
+import { safeDeleteStoredFile, saveUserAvatar } from "@/lib/uploads";
 
 export async function uploadUserAvatar(userId: string, file: File) {
   const validationError = validateAvatarUpload(file.name, file.size);
@@ -24,12 +24,11 @@ export async function uploadUserAvatar(userId: string, file: File) {
       select: { id: true, avatarUrl: true },
     });
 
-    if (existing.avatarUrl) {
-      await deleteStoredFile(existing.avatarUrl);
-    }
+    await safeDeleteStoredFile(existing.avatarUrl);
 
     return { user: updated, path: storedPath };
-  } catch {
+  } catch (error) {
+    console.error("[avatar] upload failed:", error);
     return { error: "upload_failed" as const };
   }
 }
@@ -43,9 +42,7 @@ export async function removeUserAvatar(userId: string) {
     return { error: "not_found" as const };
   }
 
-  if (existing.avatarUrl) {
-    await deleteStoredFile(existing.avatarUrl);
-  }
+  await safeDeleteStoredFile(existing.avatarUrl);
 
   await prisma.user.update({
     where: { id: userId },

@@ -10,6 +10,22 @@ export GIT_ASK_YESNO=false
 git config --local gc.auto 0 2>/dev/null || true
 git config --local maintenance.auto false 2>/dev/null || true
 
+# Windows : `2>nul` (CMD) peut créer un fichier "nul" — nom réservé, git add échoue
+cleanup_windows_nul_artifact() {
+  if [ ! -e "./nul" ] && [ ! -f "./nul" ]; then
+    return 0
+  fi
+
+  echo "🧹 Suppression de l'artefact Windows 'nul'..."
+  if command -v cmd.exe >/dev/null 2>&1; then
+    cmd.exe //c "del /f /q nul" >/dev/null 2>&1 || true
+  fi
+  if command -v powershell.exe >/dev/null 2>&1; then
+    powershell.exe -NoProfile -Command "Remove-Item -LiteralPath './nul' -Force -ErrorAction SilentlyContinue" >/dev/null 2>&1 || true
+  fi
+  rm -f ./nul 2>/dev/null || true
+}
+
 if [ -z "${1:-}" ]; then
   echo "❌ Erreur : tu dois fournir un message de commit."
   echo '👉 Exemple : sh gitupdate.sh "fix: correction bug login"'
@@ -19,6 +35,8 @@ fi
 COMMIT_MSG="$1"
 
 echo "📂 Dossier courant : $(pwd)"
+
+cleanup_windows_nul_artifact
 
 # 1) Vérifier que gh est installé
 if ! command -v gh >/dev/null 2>&1; then
@@ -63,9 +81,10 @@ if [ "$CURRENT_BRANCH" != "$DEFAULT_BRANCH" ]; then
   git branch -M "$DEFAULT_BRANCH"
 fi
 
-# 6) Ajouter tous les fichiers AVANT pull/rebase
+# 6) Ajouter les fichiers (nul ignoré via .gitignore + cleanup)
+cleanup_windows_nul_artifact
 echo "➕ Ajout des fichiers..."
-git add .
+git add -A
 
 # 7) Commit si changements
 if git diff --cached --quiet; then

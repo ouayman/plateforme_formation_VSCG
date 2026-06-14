@@ -56,6 +56,7 @@ export function PlatformSettingsForm({ initial }: PlatformSettingsFormProps) {
             logoUrl={form.logoDarkUrl}
             alt={form.organizationName}
             variant="sidebar"
+            cacheVersion={form.logoDarkUrl}
           />
         </div>
         <div className="rounded-2xl border bg-white p-4">
@@ -66,6 +67,7 @@ export function PlatformSettingsForm({ initial }: PlatformSettingsFormProps) {
             logoUrl={form.logoLightUrl}
             alt={form.organizationName}
             variant="login"
+            cacheVersion={form.logoLightUrl}
           />
         </div>
       </div>

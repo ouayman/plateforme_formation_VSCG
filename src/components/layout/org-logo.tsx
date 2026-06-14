@@ -17,6 +17,8 @@ type OrgLogoProps = {
   variant?: BrandLogoVariant;
   className?: string;
   rounded?: "lg" | "xl" | "full" | "none";
+  /** Force le navigateur à recharger après remplacement (même chemin legacy). */
+  cacheVersion?: number | string;
 };
 
 export function OrgLogo({
@@ -25,6 +27,7 @@ export function OrgLogo({
   variant,
   className,
   rounded = "none",
+  cacheVersion,
 }: OrgLogoProps) {
   const radius =
     rounded === "full"
@@ -38,7 +41,8 @@ export function OrgLogo({
   return (
     // eslint-disable-next-line @next/next/no-img-element
     <img
-      src={resolveMediaUrl(logoUrl)}
+      key={`${logoUrl}-${cacheVersion ?? ""}`}
+      src={resolveMediaUrl(logoUrl, cacheVersion)}
       alt={alt}
       decoding="async"
       className={cn(

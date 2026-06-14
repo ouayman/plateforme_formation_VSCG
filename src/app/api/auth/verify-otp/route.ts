@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { prisma } from "@/lib/prisma";
+
+import { completeSignIn } from "@/lib/auth/sign-in";
 import { verifyOtp } from "@/lib/auth/otp";
-import { createSession } from "@/lib/auth/session";
+import { prisma } from "@/lib/prisma";
 
 const schema = z.object({
   email: z.string().email(),
@@ -29,15 +30,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: result.error }, { status: 401 });
   }
 
-  await prisma.user.update({
-    where: { id: user.id },
-    data: {
-      lastSignInAt: new Date(),
-      loginCount: { increment: 1 },
-    },
-  });
-
-  await createSession({ userId: user.id, email: user.email });
+  await completeSignIn(user.id, user.email);
 
   return NextResponse.json({ ok: true });
 }

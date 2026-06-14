@@ -1,7 +1,17 @@
-export function resolveMediaUrl(path: string | null | undefined): string {
+export function resolveMediaUrl(
+  path: string | null | undefined,
+  cacheVersion?: number | string
+): string {
   if (!path) return "";
+  let url: string;
   if (path.startsWith("/") || path.startsWith("http://") || path.startsWith("https://")) {
-    return path;
+    url = path;
+  } else {
+    url = `/api/media/${path}`;
   }
-  return `/api/media/${path}`;
+  if (cacheVersion !== undefined && cacheVersion !== "") {
+    const sep = url.includes("?") ? "&" : "?";
+    url = `${url}${sep}v=${encodeURIComponent(String(cacheVersion))}`;
+  }
+  return url;
 }

@@ -12,6 +12,7 @@ export const loadAccountPageData = cache(async (userId: string) => {
       firstName: true,
       lastName: true,
       avatarUrl: true,
+      passwordHash: true,
       type: true,
       company: { select: { name: true } },
       globalRoles: { select: { role: true } },

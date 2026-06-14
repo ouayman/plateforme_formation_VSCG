@@ -10,8 +10,13 @@ export const OTP = {
   LENGTH: 4,
   VALIDITY_MINUTES: 10,
   MAX_ATTEMPTS: 5,
-  RATE_LIMIT_COUNT: 3,
+  RATE_LIMIT_COUNT: 50,
   RATE_LIMIT_WINDOW_MINUTES: 15,
+} as const;
+
+export const PASSWORD = {
+  MIN_LENGTH: 8,
+  RESET_TOKEN_VALIDITY_HOURS: 1,
 } as const;
 
 export const UPLOAD = {
@@ -26,7 +31,7 @@ export const IMAGE_UPLOAD = {
 } as const;
 
 export const AVATAR_UPLOAD = {
-  MAX_SIZE_BYTES: 5 * 1024 * 1024,
+  MAX_SIZE_BYTES: 4 * 1024 * 1024,
   ALLOWED_EXTENSIONS: [".png", ".jpg", ".jpeg", ".webp"],
   OUTPUT_SIZE: 256,
   OUTPUT_QUALITY: 82,

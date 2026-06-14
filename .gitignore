@@ -43,6 +43,10 @@ next-env.d.ts
 # PM2 logs (prod)
 /logs
 
+# Windows CMD artefact (ex. `2>nul` crée parfois ce fichier — git add échoue)
+/nul
+nul
+
 # SSH keys — ne jamais committer
 *vscg_deploy*
 USERPROFILE.ssh*

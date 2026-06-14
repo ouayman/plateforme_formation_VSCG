@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { prisma } from "@/lib/prisma";
+
 import { canSendOtp, createOtp } from "@/lib/auth/otp";
 import { sendOtpEmail } from "@/lib/mail/send-otp";
+import { prisma } from "@/lib/prisma";
 
 const schema = z.object({
   email: z.string().email(),
@@ -30,7 +31,13 @@ export async function POST(req: Request) {
   }
 
   const code = await createOtp(user.id);
-  await sendOtpEmail(email, code);
+
+  try {
+    await sendOtpEmail(email, code);
+  } catch (error) {
+    console.error("[send-otp] email failed:", error);
+    return NextResponse.json({ error: "email_failed" }, { status: 500 });
+  }
 
   return NextResponse.json({ ok: true });
 }

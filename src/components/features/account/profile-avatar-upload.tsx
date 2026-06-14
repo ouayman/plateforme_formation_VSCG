@@ -122,7 +122,7 @@ export function ProfileAvatarUpload({
         </div>
       </div>
       <p className="text-[12px] text-muted-foreground">
-        PNG, JPG ou WebP — max 5 Mo. L&apos;image est redimensionnée automatiquement.
+        PNG, JPG ou WebP — max 4 Mo. L&apos;image est redimensionnée automatiquement.
       </p>
       {error && <p className="text-[12px] text-destructive">{error}</p>}
     </div>
