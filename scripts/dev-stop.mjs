@@ -1,4 +1,10 @@
 import { execSync } from "node:child_process";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+import { killNextWorkers } from "./kill-next-workers.mjs";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const root = path.resolve(__dirname, "..");
 
 function log(message) {
   console.log(`[dev:stop] ${message}`);
@@ -47,4 +53,5 @@ function killPort(targetPort) {
 
 killPort(3000);
 killPort(3001);
+killNextWorkers(root, (msg) => log(msg));
 log("Terminé");

@@ -4,13 +4,13 @@
  * Usage: node scripts/clean-next.mjs [--kill-ports]
  */
 import { execSync } from "node:child_process";
-import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { killNextWorkers } from "./kill-next-workers.mjs";
+import { removeNextDir } from "./next-dir-cleanup.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(__dirname, "..");
-const nextDir = path.join(root, ".next");
 const killPorts = process.argv.includes("--kill-ports");
 
 function log(msg) {
@@ -58,70 +58,20 @@ function killPort(targetPort) {
   }
 }
 
-function removeEntry(entryPath) {
-  const stat = fs.lstatSync(entryPath);
-  if (stat.isDirectory()) {
-    for (const name of fs.readdirSync(entryPath)) {
-      removeEntry(path.join(entryPath, name));
-    }
-    fs.rmdirSync(entryPath);
-    return;
-  }
-  if (stat.isSymbolicLink()) {
-    fs.unlinkSync(entryPath);
-    return;
-  }
-  fs.unlinkSync(entryPath);
-}
-
-function removeNextDir() {
-  if (!fs.existsSync(nextDir)) return true;
-
-  const stat = fs.lstatSync(nextDir);
-  if (stat.isSymbolicLink()) {
-    try {
-      fs.unlinkSync(nextDir);
-      log("Junction .next legacy supprimée");
-      return true;
-    } catch (err) {
-      log(`Échec junction — ${err.message}`);
-      return false;
-    }
-  }
-
-  for (let attempt = 1; attempt <= 6; attempt += 1) {
-    try {
-      removeEntry(nextDir);
-      return true;
-    } catch {
-      try {
-        fs.rmSync(nextDir, { recursive: true, force: true, maxRetries: 5, retryDelay: 400 });
-        return true;
-      } catch (err) {
-        if (attempt < 6) {
-          log(`Verrouillé (${attempt}/6), retry… — ${err.code ?? err.message}`);
-          sleep(1000);
-        } else {
-          log(`Échec suppression .next — ${err.message}`);
-          return false;
-        }
-      }
-    }
-  }
-  return false;
-}
-
 if (killPorts) {
   killPort(3000);
   killPort(3001);
   sleep(600);
 }
 
+killNextWorkers(root, (msg) => log(msg));
+sleep(400);
+
 if (/OneDrive/i.test(root)) {
-  log("OneDrive : arrête npm run dev avant build (évite EPERM/EINVAL sur .next)");
+  log("OneDrive : quarantaine .next (rename rapide, pas de parcours récursif)");
 }
 
-if (!removeNextDir()) {
+if (!removeNextDir(root, log)) {
   console.error("[clean:next] npm run dev:stop && npm run clean:next");
   process.exit(1);
 }

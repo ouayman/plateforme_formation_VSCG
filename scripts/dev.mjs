@@ -1,7 +1,10 @@
 import { execSync, spawn } from "node:child_process";
+import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { needsFileWatcherPolling } from "./file-watcher-polling.mjs";
+import { killNextWorkers } from "./kill-next-workers.mjs";
+import { quarantineNextDir } from "./next-dir-cleanup.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(__dirname, "..");
@@ -63,7 +66,17 @@ function killPort(targetPort) {
 log("Arrêt des anciens serveurs sur les ports 3000 et 3001...");
 killPort(3000);
 killPort(3001);
+killNextWorkers(root, (msg) => log(msg));
 sleep(800);
+
+const standaloneNext = path.join(root, ".next", "standalone");
+if (fs.existsSync(standaloneNext)) {
+  log("Build prod détecté (.next/standalone) — quarantaine de .next…");
+  if (!quarantineNextDir(root, log)) {
+    log("Impossible de déplacer .next. Lance : npm run dev:stop && npm run clean:next");
+    process.exit(1);
+  }
+}
 
 if (process.env.DEV_CLEAN === "true" || process.env.DEV_CLEAN === "1") {
   log("DEV_CLEAN=1 → nettoyage .next…");

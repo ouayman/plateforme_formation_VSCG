@@ -1,6 +1,6 @@
 import { renderFeedbackConfirmationEmail } from "@/emails/feedback-confirmation";
 import { APP_NAME } from "@/lib/constants";
-import { sendMail } from "@/lib/mail/mail-service";
+import { sendEmail } from "@/lib/email";
 
 export async function sendFeedbackConfirmationEmail(
   to: string,
@@ -16,7 +16,7 @@ export async function sendFeedbackConfirmationEmail(
     appUrl,
   });
 
-  await sendMail({
+  await sendEmail({
     to,
     subject: `Merci pour votre avis — ${APP_NAME}`,
     html,

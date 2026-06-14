@@ -14,7 +14,7 @@ const nextConfig = {
   typescript: { ignoreBuildErrors: true },
   experimental: {
     webpackBuildWorker: false,
-    serverComponentsExternalPackages: ["sharp"],
+    serverComponentsExternalPackages: ["sharp", "@vercel/blob"],
   },
   webpack: (config, { dev }) => {
     if (!dev) {

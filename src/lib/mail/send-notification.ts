@@ -1,4 +1,4 @@
-import { sendMail } from "@/lib/mail/mail-service";
+import { sendEmail } from "@/lib/email";
 
 export async function sendNotificationEmail(
   to: string,
@@ -6,5 +6,5 @@ export async function sendNotificationEmail(
   html: string,
   text?: string
 ) {
-  await sendMail({ to, subject, html, text });
+  await sendEmail({ to, subject, html, text });
 }

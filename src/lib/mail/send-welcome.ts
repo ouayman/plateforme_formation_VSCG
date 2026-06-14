@@ -1,6 +1,6 @@
 import { renderWelcomeEmail } from "@/emails/welcome-user";
 import { APP_NAME } from "@/lib/constants";
-import { sendMail } from "@/lib/mail/mail-service";
+import { sendEmail } from "@/lib/email";
 import { getPlatformSettings } from "@/lib/platform-settings";
 
 export async function sendWelcomeEmail(to: string, firstName: string) {
@@ -17,7 +17,7 @@ export async function sendWelcomeEmail(to: string, firstName: string) {
     console.log(`[Welcome] Email sent to ${to}`);
   }
 
-  await sendMail({
+  await sendEmail({
     to,
     subject: `Bienvenue sur ${APP_NAME}`,
     html,
